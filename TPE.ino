@@ -1,113 +1,135 @@
-//#include <MaxMatrix.h>
+#include <MaxMatrix.h>
 
-#define MAX_LENGTH 256 //16x16
+#define HORIZONTAL_MATRIXES_QTY 2
+#define VERTICAL_MATRIXES_QTY 2
+#define MATRIX_SIZE 64 // 8x8
+#define MAX_LENGTH (MATRIX_SIZE * VERTICAL_MATRIXES_QTY * HORIZONTAL_MATRIXES_QTY)
 #define INIT_LENGTH 2
-#define INIT_ROW_POS 7
+#define INIT_ROW_POS 7 // La cabeza de la serpiente comienza en "el medio de la pantalla" (esquina superior derecha de la matriz de abajo a la izquierda)
 #define INIT_COL_POS 7
-#define INIT_SPEED 5 //no tengo ni idea
+#define INIT_SPEED 2000 //cantidad de ms que espera inicialmente hasta el siguiente movimiento de la serpiente 
 
-//MaxMatrix screen[2][2] = {{MaxMatrix(1,2,3,4), MaxMatrix(5,6,7,8)}, {MaxMatrix(9,10,11,12), MaxMatrix(13,14,15,0)}};
 
-enum dir{UP, DOWN, LEFT, RIGHT};
+/* Definicion de tipos */
+
+enum dir{UP, DOWN, LEFT, RIGHT}; // Direcciones posibles
 
 typedef struct{
-  int x;
-  int y;
+  int x; //Horizontal 0=izquierda
+  int y; //Vertical 0=abajo
 } Position;
+
+
+/* Definicion de clases */
 
 class Snake {
   private:
-    Position pos[];
-    int headPosition;
-    int currentSize;
-    boolean alive;
+    Position body[MAX_LENGTH]; // Arreglo que marca en que posicion de la pantalla esta cada parte del cuerpo de la serpiente
+    int head; //posicion dentro del array en la que esta la cabeza
+    int currentLength; //Tamanio de la serpiente
+    bool alive;
+    dir currentDirection; //En la direccion que esta yendo actualmente la serpiente
+    long currentSpeed; //cantidad de ms que se espera hasta el siguiente movimiento
   
   public:
     Snake() {
-      pos[MAX_LENGTH] = pos[MAX_LENGTH];
+      head = 0; //La cabeza empieza en la posicion 0 del array
+      currentLength = INIT_LENGTH;
+      alive = true;
+      currentDirection = RIGHT;
     }
-  
-    boolean isAlive() {
+    /* Getters */
+    long getCurrentSpeed(){
+      return currentSpeed;
+    }
+    
+    bool isAlive() {
       return alive;
     }
 
-    boolean moveSnake(dir up) {
+    /* Crea el cuerpo de la serpiente y lo posiciona en las matrices */
+    int initialize(){
+      if(INIT_ROW_POS - (currentLength - 1) < 0){
+        fprintf(stderr, "El tamanio de la serpiente es muy grande para empezar\n");
+        return 1;
+      }
+        
+      //La serpiente empieza en linea recta mirando para la derecha
+      for(int i=0; i<currentLength; i++){
+        body[i].y = INIT_ROW_POS;
+        body[i].x = INIT_COL_POS-i;
+      }
+      return 0;
+    }
+    
+    bool moveSnake(dir newDirection) {
       if (!alive) {
         return false;
       }
 
-      for (int i = 0; i < currentSize; i++) {
-        
+      switch(newDirection){
+        case UP:
+          if(currentDirection != DOWN){
+            currentDirection = newDirection;
+            body[(head+1) % MAX_LENGTH].x = body[(head+1) % MAX_LENGTH].x;
+            body[(head+1) % MAX_LENGTH].y = body[(head) % MAX_LENGTH].y + 1;
+          }
+        break;
+        case DOWN:
+          if(currentDirection != UP){
+            currentDirection = newDirection;
+            body[(head+1) % MAX_LENGTH].x = body[(head+1) % MAX_LENGTH].x;
+            body[(head+1) % MAX_LENGTH].y = body[(head) % MAX_LENGTH].y - 1;
+          }
+        break;
+        case LEFT:
+            currentDirection = newDirection;
+            body[(head+1) % MAX_LENGTH].x = body[(head+1) % MAX_LENGTH].x - 1;
+            body[(head+1) % MAX_LENGTH].y = body[(head) % MAX_LENGTH].y;
+        break;
+        case RIGHT:
+          if(currentDirection != LEFT){
+            currentDirection = newDirection;
+            body[(head+1) % MAX_LENGTH].x = body[(head+1) % MAX_LENGTH].x + 1;
+            body[(head+1) % MAX_LENGTH].y = body[(head) % MAX_LENGTH].y;
+            //chequear si se choco 
+          }
+        break;
       }
-
+      //verificar si se choco y en ese caso cambiar alive a false
       return alive;
     }
+};
 
-    
-}
 
-Position body[MAX_LENGTH];
-int currentLength = INIT_LENGTH;
-bool gameover = false;
-int snakeSpeed=INIT_SPEED;
-
-long timeElapsed;
-dir currentDir = RIGHT;
+/* Creacion de variables globales */
+Snake snake;
+MaxMatrix screen[2][2] = {{MaxMatrix(1,2,3,4), MaxMatrix(5,6,7,8)}, {MaxMatrix(9,10,11,12), MaxMatrix(13,14,15,0)}}; //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
 dir input = RIGHT;
 
+
 void setup() {
-  for(int i=0; i<2; i++){
-    for(int j=0; j<2; j++){
+  //Inicializacion de las matrices
+  for(int i=0; i<VERTICAL_MATRIXES_QTY; i++){
+    for(int j=0; j<HORIZONTAL_MATRIXES_QTY; j++){
       screen[i][j].init();
       screen[i][j].setIntensity(8);
     }
   }
-  for(int i=0; i<currentLength; i++){ //Faltaria chequear que INIT_ROW_POS-i sea >=0
-    body[i].y = INIT_ROW_POS;
-    body[i].x = INIT_COL_POS-i;
+  if(snake.initialize() != 0){ // Si hubo error en la creacion inicializacion de la serpiente en la pantalla
+    return;
   }
   
   //inicializar botones
 }
 
 void loop() {
-  
-  
-  //LEER INPUT DE BOTON
-  
-  switch(input){
-    case UP:
-      if(currentDir != DOWN){
-        currentDir = input;
-        //funcion que mueva todo en el array uno para la derecha
-        body[0].x = body[1].x;
-        body[0].y = body[1].y+1;
-      }
-    break;
-    case DOWN:
-      if(currentDir != UP){
-        currentDir = input;
-        //funcion que mueva todo en el array uno para la derecha
-        body[0].x = body[1].x;
-        body[0].y = body[1].y-1;
-      }
-    break;
-    case LEFT:
-      if(currentDir != RIGHT){
-        currentDir = input;
-        //funcion que mueva todo en el array uno para la derecha
-        body[0].x = body[1].x-1;
-        body[0].y = body[1].y;
-      }
-    break;
-    case RIGHT:
-      if(currentDir != LEFT){
-        currentDir = input;
-        //funcion que mueva todo en el array uno para la derecha
-        body[0].x = body[1].x+1;
-        body[0].y = body[1].y;
-        //chequear si se choco 
-      }
-    break;
+  if(snake.isAlive()){
+    
+    //leer tecla y meterlo en variable input
+    snake.moveSnake(input);
+    //if(snake.isAlive()) meter la snake en la pantalla
   }
+  delay(snake.getCurrentSpeed());
+
 }
