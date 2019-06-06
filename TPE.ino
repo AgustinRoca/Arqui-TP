@@ -1,4 +1,4 @@
-#include <MaxMatrix.h>
+//#include <MaxMatrix.h>
 
 #define MAX_LENGTH 256 //16x16
 #define INIT_LENGTH 2
@@ -6,12 +6,45 @@
 #define INIT_COL_POS 7
 #define INIT_SPEED 5 //no tengo ni idea
 
-MaxMatrix screen[2][2] = {{MaxMatrix(1,2,3,4), MaxMatrix(5,6,7,8)}, {MaxMatrix(9,10,11,12), MaxMatrix(13,14,15,0)}};
+//MaxMatrix screen[2][2] = {{MaxMatrix(1,2,3,4), MaxMatrix(5,6,7,8)}, {MaxMatrix(9,10,11,12), MaxMatrix(13,14,15,0)}};
+
+enum dir{UP, DOWN, LEFT, RIGHT};
 
 typedef struct{
   int x;
   int y;
-}Position;
+} Position;
+
+class Snake {
+  private:
+    Position pos[];
+    int headPosition;
+    int currentSize;
+    boolean alive;
+  
+  public:
+    Snake() {
+      pos[MAX_LENGTH] = pos[MAX_LENGTH];
+    }
+  
+    boolean isAlive() {
+      return alive;
+    }
+
+    boolean moveSnake(dir up) {
+      if (!alive) {
+        return false;
+      }
+
+      for (int i = 0; i < currentSize; i++) {
+        
+      }
+
+      return alive;
+    }
+
+    
+}
 
 Position body[MAX_LENGTH];
 int currentLength = INIT_LENGTH;
@@ -19,7 +52,6 @@ bool gameover = false;
 int snakeSpeed=INIT_SPEED;
 
 long timeElapsed;
-enum dir{UP, DOWN, LEFT, RIGHT};
 dir currentDir = RIGHT;
 dir input = RIGHT;
 
@@ -39,6 +71,7 @@ void setup() {
 }
 
 void loop() {
+  
   
   //LEER INPUT DE BOTON
   
