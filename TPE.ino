@@ -35,7 +35,7 @@ class Snake {
   
   public:
     Snake() {
-      head = 0; //La cabeza empieza en la posicion 0 del array
+      head = 0;
       currentLength = INIT_LENGTH;
       alive = true;
       currentDirection = RIGHT;
@@ -62,6 +62,7 @@ class Snake {
         body[i].y = INIT_ROW_POS;
         body[i].x = INIT_COL_POS-currentLength + i;
       }
+      head = currentLength - 1;
     }
     
     bool moveSnake(dir newDirection, bool enlarge) {
