@@ -19,13 +19,13 @@ class Snake {
     uint64_t currentSpeed; //cantidad de ms que se espera hasta el siguiente movimiento
     uint64_t startTime;
     uint64_t stopTime;
-    Position body[]; // Arreglo que marca en que posicion de la pantalla esta cada parte del cuerpo de la serpiente
+    Position body[MAX_LENGTH]; // Arreglo que marca en que posicion de la pantalla esta cada parte del cuerpo de la serpiente
     uint16_t head; //posicion dentro del array en la que esta la cabeza
     bool alive;
   
   public:
     /* Crea el cuerpo de la serpiente y lo posiciona en las matrices */
-    Snake(uint16_t _initialLength, Direction _initialDirection, uint64_t _initialSpeed, uint16_t _initialRow, uint16_t _initialColumn);
+    Snake(uint16_t initialLength, Direction initialDirection, uint64_t initialSpeed, uint16_t initialRow, uint16_t initialColumn);
     
     /* Getters */
     Direction getCurrentDirection();
