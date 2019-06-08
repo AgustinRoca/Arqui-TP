@@ -1,11 +1,5 @@
 #include "Snake.h"
 
-#define HORIZONTAL_MATRIXES_QTY 1
-#define VERTICAL_MATRIXES_QTY 1
-#define MATRIX_COLUMNS 8
-#define MAX_LENGTH 256
-#define MATRIX_ROWS 8
-
 // TODO: Chequear constraints iniciales
 Snake::Snake(uint16_t _initialLength, Direction _initialDirection, uint64_t _initialSpeed, uint16_t _initialRow, uint16_t _initialColumn) {
   currentDirection = _initialDirection;
@@ -15,9 +9,9 @@ Snake::Snake(uint16_t _initialLength, Direction _initialDirection, uint64_t _ini
   
   // TODO: Corregir esto para soportar diferentes initial directions
   //La serpiente empieza en linea recta mirando para la derecha
-  for(uint16_t i=0; i < currentLength; i++){
-    body[i].y = initialRow;
-    body[i].x = initialColumn - currentLength + i;
+  for(uint16_t i=0; i < 3; i++){
+    body[i].y = _initialRow;
+    body[i].x = _initialColumn - currentLength + i;
   }
   
   head = currentLength - 1;

@@ -5,13 +5,6 @@
 #include "Position.h"
 #include "Snake.h"
 
-// TODO: Duplicado en Snake.cpp
-#define HORIZONTAL_MATRIXES_QTY 1
-#define VERTICAL_MATRIXES_QTY 1
-#define MATRIX_COLUMNS 8
-#define MAX_LENGTH 256
-#define MATRIX_ROWS 8
-
 #define MATRIX_SIZE (MATRIX_ROWS * MATRIX_COLUMNS)
 #define MAX_LENGTH (MATRIX_SIZE * VERTICAL_MATRIXES_QTY * HORIZONTAL_MATRIXES_QTY)
 #define INIT_LENGTH 2
@@ -48,6 +41,11 @@ Direction translateInput(Direction currentDir){
 
 void printWholeBody(Position body[MAX_LENGTH], int currentLength, int head, MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY]){
   for(int i=0; i<currentLength; i++){
+    Serial.print("(");
+    Serial.print(body[(head-i) % MAX_LENGTH].x);
+    Serial.print(", ");
+    Serial.print(body[(head-i) % MAX_LENGTH].y);
+    Serial.print(")");
     screen[0][0].setDot(body[(head-i) % MAX_LENGTH].y, body[(head-i) % MAX_LENGTH].x, 8);
   }
 }
@@ -84,7 +82,7 @@ void setup() {
       screen[i][j].clear();
     }
   }
-  
+
   printWholeBody(snake.getBody(), snake.getCurrentLength(), snake.getHead(), screen); 
   lastUpdatedMillis = millis();
 }
