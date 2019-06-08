@@ -87,7 +87,7 @@ void setup() {
   
   snake.initialize();
   printWholeBody(snake.getBody(), snake.getCurrentLength(), snake.getHead(), screen); 
-  
+  lastUpdatedMillis = millis();
 }
 
 void loop() {

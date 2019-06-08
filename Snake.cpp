@@ -59,12 +59,12 @@ bool Snake::isAlive() {
 
 /* Setters */
 bool Snake::moveSnake(Direction newDirection, bool enlarge) {
-  uint64_t possibleStopTime = millis();  // Don't account for time spent on routine
-  
   if (!alive) {
     return false;
   }
 
+  uint64_t possibleStopTime = millis();  // Don't account for time spent on routine
+  
   switch(newDirection){
     case UP:
       if(currentDirection != DOWN){
