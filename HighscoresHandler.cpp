@@ -43,7 +43,7 @@ void HighscoresHandler::load() {
   
   if (MAX_SCORES <= CHUNK) {
     currentSize = MAX_SCORES;
-    scores = malloc(currentSize * sizeof(scores));
+    scores = (uint64_t*) malloc(currentSize * sizeof(scores));
   }
   
   for (count = 0; count < MAX_SCORES; count++) {
@@ -53,7 +53,7 @@ void HighscoresHandler::load() {
     
     if (MAX_SCORES > CHUNK && count > 0 && count % CHUNK == 0) {
       currentSize = count + CHUNK;
-      scores = realloc(scores, currentSize * sizeof(scores));
+      scores = (uint64_t*) realloc(scores, currentSize * sizeof(scores));
     }
     
     scores[count] = read64(address);
@@ -66,7 +66,7 @@ uint8_t HighscoresHandler::registerScore(uint64_t score){
   
   if (count < MAX_SCORES && count + 1 == currentSize) {
     currentSize = count + CHUNK;
-    scores = realloc(scores, currentSize * sizeof(scores));
+    scores = (uint64_t*) realloc(scores, currentSize * sizeof(scores));
   }
   
   return ix;
