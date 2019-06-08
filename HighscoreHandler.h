@@ -1,10 +1,10 @@
-#ifndef _HighscoresHandler_H_
-#define _HighscoresHandler_H_
+#ifndef _HighscoreHandler_H_
+#define _HighscoreHandler_H_
 
 #include "Arduino.h"
 #include <EEPROM.h>
 
-class HighscoresHandler {
+class HighscoreHandler {
   private:
 	uint64_t startAddress;
 	uint8_t currentSize;
@@ -17,7 +17,7 @@ class HighscoresHandler {
 	void load();
     
   public:
-	HighscoresHandler(uint64_t _startAddress);
+	HighscoreHandler(uint64_t _startAddress);
     uint8_t registerScore(uint64_t score);
     uint8_t getScoresAmmount();
     uint64_t* getScores();

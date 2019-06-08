@@ -1,4 +1,6 @@
 #include <MaxMatrix.h>
+
+#include "HighscoreHandler.h"
 #include "Direction.h"
 #include "Position.h"
 #include "Snake.h"
