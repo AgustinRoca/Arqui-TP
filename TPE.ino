@@ -3,6 +3,13 @@
 #include "Position.h"
 #include "Snake.h"
 
+// TODO: Duplicado en Snake.cpp
+#define HORIZONTAL_MATRIXES_QTY 1
+#define VERTICAL_MATRIXES_QTY 1
+#define MATRIX_COLUMNS 8
+#define MAX_LENGTH 256
+#define MATRIX_ROWS 8
+
 #define MATRIX_SIZE (MATRIX_ROWS * MATRIX_COLUMNS)
 #define MAX_LENGTH (MATRIX_SIZE * VERTICAL_MATRIXES_QTY * HORIZONTAL_MATRIXES_QTY)
 #define INIT_LENGTH 2
@@ -11,7 +18,6 @@
 #define INIT_WAIT 500 //cantidad de ms que espera inicialmente hasta el siguiente movimiento de la serpiente (velocidad)
 #define WAIT_DECREASE_RATIO 0.9 // cambio de velocidad de la serpiente
 #define SPEED_INCREASE_TIME 2000
-
 
 Direction translateInput(Direction currentDir){
   if(Serial.available()){
@@ -60,11 +66,14 @@ void printSkull(MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY]
 Snake snake = Snake(INIT_LENGTH, RIGHT, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
 MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY] = {{MaxMatrix(11,13,10,1)}}; //{{MaxMatrix(1,2,3,4), MaxMatrix(5,6,7,8)}, {MaxMatrix(11,13,10,1), MaxMatrix(13,14,15,0)}}; //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
 Direction input = RIGHT;
-long long lastMovedMillis = 0;
-long long lastUpdatedMillis = 0;
+uint64_t lastMovedMillis = 0;
+uint64_t lastUpdatedMillis = 0;
 bool enlarge = false;
 
 void setup() {
+  //inicializar botones
+  Serial.begin(115200);
+  
   //Inicializacion de las matrices
   for(int i=0; i<VERTICAL_MATRIXES_QTY; i++){
     for(int j=0; j<HORIZONTAL_MATRIXES_QTY; j++){
@@ -73,11 +82,10 @@ void setup() {
       screen[i][j].clear();
     }
   }
-  snake.initialize();
-  printWholeBody(snake.getBody(), snake.getCurrentLength(), snake.getHead(), screen);
   
-  //inicializar botones
-  Serial.begin(115200);
+  snake.initialize();
+  printWholeBody(snake.getBody(), snake.getCurrentLength(), snake.getHead(), screen); 
+  
 }
 
 void loop() {

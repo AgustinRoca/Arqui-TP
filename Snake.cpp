@@ -1,7 +1,13 @@
 #include "Snake.h"
 
+#define HORIZONTAL_MATRIXES_QTY 1
+#define VERTICAL_MATRIXES_QTY 1
+#define MATRIX_COLUMNS 8
+#define MAX_LENGTH 256
+#define MATRIX_ROWS 8
+
 // TODO: Chequear constraints iniciales
-Snake::Snake(int _initialLength, int _initialDirection, int _initialSpeed, int _initialRow, int _initialColumn) {
+Snake::Snake(uint16_t _initialLength, Direction _initialDirection, uint64_t _initialSpeed, uint16_t _initialRow, uint16_t _initialColumn) {
   currentDirection = _initialDirection;
   currentLength = _initialLength;
   currentSpeed = _initialSpeed;
@@ -11,11 +17,10 @@ Snake::Snake(int _initialLength, int _initialDirection, int _initialSpeed, int _
   head = 0;
 }
 
-/* Crea el cuerpo de la serpiente y lo posiciona en las matrices */
 void Snake::initialize() {
   // TODO: Corregir esto para soportar diferentes initial directions
   //La serpiente empieza en linea recta mirando para la derecha
-  for(int i=0; i < currentLength; i++){
+  for(uint16_t i=0; i < currentLength; i++){
     body[i].y = initialRow;
     body[i].x = initialColumn - currentLength + i;
   }
@@ -24,36 +29,38 @@ void Snake::initialize() {
 }
 
 /* Getters */
-long long Snake::getCurrentSpeed() {
+Direction Snake::getCurrentDirection() {
+  return currentDirection;
+}
+
+uint16_t Snake::getCurrentLength() {
+  return currentLength;
+}
+
+uint64_t Snake::getCurrentSpeed() {
   return currentSpeed;
 }
 
-bool Snake::isAlive() {
-  return alive;
-}
-
-Direction Snake::getCurrentDirection() {
-  return currentDirection;
+uint64_t Snake::getAliveTime() {
+  return alive ? stopTime - startTime : millis() - startTime;
 }
 
 Position* Snake::getBody() {
   return body;
 }
 
-int Snake::getCurrentLength() {
-  return currentLength;
-}
-
-int Snake::getHead() {
+uint16_t Snake::getHead() {
   return head;
 }
 
-/* Setters */
-void Snake::setCurrentSpeed(long long newSpeed) {
-  currentSpeed = newSpeed;
+bool Snake::isAlive() {
+  return alive;
 }
 
+/* Setters */
 bool Snake::moveSnake(Direction newDirection, bool enlarge) {
+  uint64_t possibleStopTime = millis();  // Don't account for time spent on routine
+  
   if (!alive) {
     return false;
   }
@@ -111,13 +118,21 @@ bool Snake::moveSnake(Direction newDirection, bool enlarge) {
     currentLength++;
   }
     
-  if((body[head].x >= HORIZONTAL_MATRIXES_QTY * MATRIX_COLUMNS) || (body[head].x < 0) || (body[head].y >= VERTICAL_MATRIXES_QTY * MATRIX_ROWS) || (body[head].y < 0)) //si se choco contra algun borde
+  if((body[head].x >= HORIZONTAL_MATRIXES_QTY * MATRIX_COLUMNS) || (body[head].x < 0) || (body[head].y >= VERTICAL_MATRIXES_QTY * MATRIX_ROWS) || (body[head].y < 0)) { //si se choco contra algun borde
+    stopTime = possibleStopTime;
     return alive = false;
-    
-  for(int i=1; i<currentLength; i++){
-    if((body[head].x == body[(MAX_LENGTH + head - i)% MAX_LENGTH].x) && (body[head].y == body[(MAX_LENGTH + head - i)% MAX_LENGTH].y)) //si se choco con alguna parte de su cuerpo
+  }
+  
+  for(uint16_t i=1; i < currentLength; i++){
+    if((body[head].x == body[(MAX_LENGTH + head - i)% MAX_LENGTH].x) && (body[head].y == body[(MAX_LENGTH + head - i)% MAX_LENGTH].y)) { //si se choco con alguna parte de su cuerpo
+      stopTime = possibleStopTime;
       return alive = false;
+    }
   }
   
   return alive;
+}
+
+void Snake::setCurrentSpeed(uint64_t newSpeed) {
+  currentSpeed = newSpeed;
 }
