@@ -11,13 +11,8 @@ Snake::Snake(uint16_t _initialLength, Direction _initialDirection, uint64_t _ini
   currentDirection = _initialDirection;
   currentLength = _initialLength;
   currentSpeed = _initialSpeed;
-  initialColumn = _initialColumn;
-  initialRow = _initialRow;
   alive = true;
-  head = 0;
-}
-
-void Snake::initialize() {
+  
   // TODO: Corregir esto para soportar diferentes initial directions
   //La serpiente empieza en linea recta mirando para la derecha
   for(uint16_t i=0; i < currentLength; i++){

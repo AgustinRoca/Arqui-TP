@@ -85,16 +85,16 @@ void setup() {
     }
   }
   
-  snake.initialize();
   printWholeBody(snake.getBody(), snake.getCurrentLength(), snake.getHead(), screen); 
   lastUpdatedMillis = millis();
 }
 
 void loop() {
   if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME){
-    lastUpdatedMillis = millis();
     snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO);
     enlarge = true;
+    
+    lastUpdatedMillis = millis();
   }
   
   if(snake.isAlive()){
@@ -103,13 +103,15 @@ void loop() {
     input = translateInput(input);
     
     if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //si es tiempo de moverse
-      lastMovedMillis = millis();
       snake.moveSnake(input, enlarge);
+    
       if(snake.isAlive())
         printMove(snake.getBody()[snake.getHead()], snake.getBody()[(MAX_LENGTH + snake.getHead() - snake.getCurrentLength()) % MAX_LENGTH], screen);
       else
         printSkull(screen);
       enlarge = false;
+      
+      lastMovedMillis = millis();
     }
   }
 }
