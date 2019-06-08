@@ -1,4 +1,5 @@
 #include <MaxMatrix.h>
+#include "MultipleFileTest.h"
 
 #define HORIZONTAL_MATRIXES_QTY 1
 #define VERTICAL_MATRIXES_QTY 1
@@ -218,6 +219,8 @@ void setup() {
   
   //inicializar botones
   Serial.begin(115200);
+  
+  Serial.println(test());
 }
 
 void loop() {
