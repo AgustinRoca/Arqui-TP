@@ -15,11 +15,11 @@
 class Snake {
   private:
     Direction currentDirection; //En la direccion que esta yendo actualmente la serpiente
+    Position body[MAX_LENGTH]; // Arreglo que marca en que posicion de la pantalla esta cada parte del cuerpo de la serpiente
     uint16_t currentLength; //Tamanio de la serpiente
     uint64_t currentSpeed; //cantidad de ms que se espera hasta el siguiente movimiento
     uint64_t startTime;
     uint64_t stopTime;
-    Position body[MAX_LENGTH]; // Arreglo que marca en que posicion de la pantalla esta cada parte del cuerpo de la serpiente
     uint16_t head; //posicion dentro del array en la que esta la cabeza
     bool alive;
   

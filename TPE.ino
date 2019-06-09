@@ -41,11 +41,6 @@ Direction translateInput(Direction currentDir){
 
 void printWholeBody(Position body[MAX_LENGTH], int currentLength, int head, MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY]){
   for(int i=0; i<currentLength; i++){
-    Serial.print("(");
-    Serial.print(body[(head-i) % MAX_LENGTH].x);
-    Serial.print(", ");
-    Serial.print(body[(head-i) % MAX_LENGTH].y);
-    Serial.print(")");
     screen[0][0].setDot(body[(head-i) % MAX_LENGTH].y, body[(head-i) % MAX_LENGTH].x, 8);
   }
 }
