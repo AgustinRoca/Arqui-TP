@@ -9,10 +9,10 @@ Snake::Snake(uint16_t initialLength, Direction initialDirection, uint64_t initia
   columns = _columns;
   rows = _rows;
   
-  
+  body = (Position *)malloc(rows * columns * sizeof(*body));
   // TODO: Corregir esto para soportar diferentes initial directions
   //La serpiente empieza en linea recta mirando para la derecha
-  for(uint16_t i=0; i < 3; i++){
+  for(uint16_t i=0; i < initialLength; i++){
     body[i].y = initialRow;
     body[i].x = initialColumn - currentLength + i;
   }
@@ -127,4 +127,8 @@ bool Snake::moveSnake(Direction newDirection, bool enlarge) {
 
 void Snake::setCurrentSpeed(uint64_t newSpeed) {
   currentSpeed = newSpeed;
+}
+
+void Snake::freeSnake(){
+  free(body);
 }

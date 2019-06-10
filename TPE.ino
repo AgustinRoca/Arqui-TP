@@ -104,8 +104,10 @@ void loop() {
     
       if(snake.isAlive())
         printMove(snake.getBody()[snake.getHead()], snake.getBody()[(MAX_LENGTH + snake.getHead() - snake.getCurrentLength()) % MAX_LENGTH], screen);
-      else
+      else{
         printSkull(screen);
+        snake.freeSnake(); //libera solo el body, no es un destructor
+      }
       enlarge = false;
       
       lastMovedMillis = millis();

@@ -6,12 +6,10 @@
 #include "Position.h"
 #include <EEPROM.h>
 
-#define MAX_LENGTH 256
-
 class Snake {
   private:
     Direction currentDirection; //En la direccion que esta yendo actualmente la serpiente
-    Position body[MAX_LENGTH]; // Arreglo que marca en que posicion de la pantalla esta cada parte del cuerpo de la serpiente
+    Position * body; // Arreglo que marca en que posicion de la pantalla esta cada parte del cuerpo de la serpiente
     uint16_t currentLength; //Tamanio de la serpiente
     uint64_t currentSpeed; //cantidad de ms que se espera hasta el siguiente movimiento
     uint64_t startTime;
@@ -37,6 +35,8 @@ class Snake {
     /* Setters */
     bool moveSnake(Direction newDirection, bool enlarge);
     void setCurrentSpeed(uint64_t newSpeed);
+
+    void freeSnake();
 };
 
 #endif
