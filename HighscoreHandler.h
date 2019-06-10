@@ -61,7 +61,7 @@ class HighscoreHandler {
     
     // Resetea zona de EEPROM utilizada para almacenaje de scores.
     // Setea un byte especial en la direccion de memoria "startingAddress"
-    void reset();
+    void resetEEPROM();
 };
 
 #endif

@@ -203,7 +203,7 @@ const uint64_t* HighscoreHandler::getScores() {
   return scores;
 }
 
-void HighscoreHandler::reset() {
+void HighscoreHandler::resetEEPROM() {
   if (scores != NULL) {
     free(scores);
     scores = NULL;
