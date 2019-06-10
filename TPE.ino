@@ -13,6 +13,10 @@
 #define INIT_WAIT 500 //cantidad de ms que espera inicialmente hasta el siguiente movimiento de la serpiente (velocidad)
 #define WAIT_DECREASE_RATIO 0.9 // cambio de velocidad de la serpiente
 #define SPEED_INCREASE_TIME 2000
+#define HORIZONTAL_MATRIXES_QTY 1
+#define VERTICAL_MATRIXES_QTY 1
+#define MATRIX_COLUMNS 8
+#define MATRIX_ROWS 8
 
 Direction translateInput(Direction currentDir){
   if(Serial.available()){
@@ -58,7 +62,7 @@ void printSkull(MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY]
 }
 
 /* Creacion de variables globales */
-Snake snake = Snake(INIT_LENGTH, RIGHT, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
+Snake snake = Snake(INIT_LENGTH, RIGHT, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS, HORIZONTAL_MATRIXES_QTY * MATRIX_COLUMNS, VERTICAL_MATRIXES_QTY * MATRIX_ROWS);
 MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY] = {{MaxMatrix(11,13,10,1)}}; //{{MaxMatrix(1,2,3,4), MaxMatrix(5,6,7,8)}, {MaxMatrix(11,13,10,1), MaxMatrix(13,14,15,0)}}; //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
 Direction input = RIGHT;
 uint64_t lastMovedMillis = 0;

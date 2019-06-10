@@ -6,11 +6,7 @@
 #include "Position.h"
 #include <EEPROM.h>
 
-#define HORIZONTAL_MATRIXES_QTY 1
-#define VERTICAL_MATRIXES_QTY 1
-#define MATRIX_COLUMNS 8
 #define MAX_LENGTH 256
-#define MATRIX_ROWS 8
 
 class Snake {
   private:
@@ -22,10 +18,12 @@ class Snake {
     uint64_t stopTime;
     uint16_t head; //posicion dentro del array en la que esta la cabeza
     bool alive;
+    uint16_t columns;
+    uint16_t rows;
   
   public:
     /* Crea el cuerpo de la serpiente y lo posiciona en las matrices */
-    Snake(uint16_t initialLength, Direction initialDirection, uint64_t initialSpeed, uint16_t initialRow, uint16_t initialColumn);
+    Snake(uint16_t initialLength, Direction initialDirection, uint64_t initialSpeed, uint16_t initialRow, uint16_t initialColumn, uint16_t columns, uint16_t rows);
     
     /* Getters */
     Direction getCurrentDirection();
