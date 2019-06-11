@@ -11,7 +11,7 @@ InputHandler::InputHandler() {
 }
 
 void InputHandler::registerPin(uint8_t pin, uint8_t activeType, bool internalPullup) {
-  pinMode(pin, OUTPUT);
+  pinMode(pin, INPUT);
   
   if (activeType == HIGH && internalPullup) {
     digitalWrite(pin, HIGH);
@@ -36,7 +36,11 @@ int16_t InputHandler::getActivePin() {
 int16_t InputHandler::readInputs() {
   bool found = false;
   
-  for (uint8_t ix = 0; ix < count; ix++) {
+  for (uint8_t ix = 0; ix < count && !found; ix++) {
+    Serial.print("Read: ");
+    Serial.print(digitalRead(pins[ix]));
+    Serial.print(" ");
+    Serial.println(activeTypes[ix]);
     if (digitalRead(pins[ix]) == activeTypes[ix]) {
       activePin = pins[ix];
       found = true;
