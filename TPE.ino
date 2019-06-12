@@ -20,15 +20,18 @@
 #define MATRIX_ROWS 8 
 #define INITIAL_EEPROM_ADDRESS 0
 #define MAX_HIGHSCORES 3 //cantidad maxima de maximas puntuaciones que se almacenan
-#define ON 1 //intensidad de led cuando se prende
+#define ON 8 //intensidad de led cuando se prende
 #define OFF 0 //intensidad de led cuando se apaga
 #define LEFT_BUTTON_PIN 5
 #define RIGHT_BUTTON_PIN 3
+#define DATA_PIN 11
+#define CLK_PIN 10
+#define CS_PIN 13
+
 
 Direction translateInput(Direction currentDir, HighscoreHandler * highscore, InputHandler input){
   if(Serial.available()){
-    char c;
-    c = Serial.read();
+    char c = Serial.read();
     
     switch(toupper(c)){
       case 'A': 
@@ -38,16 +41,11 @@ Direction translateInput(Direction currentDir, HighscoreHandler * highscore, Inp
         return currentDir = (Direction) ((currentDir + 1) % 4);  //giro en sentido horario
       break;
       case 'P':
-        printRom(*highscore);
+        printHighscores(*highscore);
         return currentDir;
         break;
       case 'R':
         highscore->resetScores();
-        Serial.print("Toy\n");
-        return currentDir;
-        break;
-      case 'Y':
-        highscore->initializeScores();
         return currentDir;
         break;
       default:
@@ -58,13 +56,16 @@ Direction translateInput(Direction currentDir, HighscoreHandler * highscore, Inp
     return currentDir;
 }
 
-void printRom(HighscoreHandler highscore) {
+void printHighscores(HighscoreHandler highscore) {
+  Serial.println("Puntajes Maximos:");
   if (highscore.getScoresAmmount() > 0) {
     for(int i=0; i<highscore.getScoresAmmount(); i++){
+      Serial.print(i+1, DEC);
+      Serial.print(". ");
       Serial.println((long)highscore.getScores()[i], DEC);
     }
   } else {
-    Serial.println("Tu vieja");
+    Serial.println("No hay puntajes registrados");
   }
 }
 
@@ -88,7 +89,7 @@ void printSkull(MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY]
 
 /* Creacion de variables globales */
 Snake snake(INIT_LENGTH, RIGHT, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS, HORIZONTAL_MATRIXES_QTY * MATRIX_COLUMNS, VERTICAL_MATRIXES_QTY * MATRIX_ROWS);
-MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY] = {{MaxMatrix(11,13,10,1)}}; //{{MaxMatrix(1,2,3,4), MaxMatrix(5,6,7,8)}, {MaxMatrix(11,13,10,1), MaxMatrix(13,14,15,0)}}; //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
+MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY] = {{MaxMatrix(DATA_PIN,CS_PIN,CLK_PIN,1)}}; //{{MaxMatrix(1,2,3,4), MaxMatrix(5,6,7,8)}, {MaxMatrix(11,13,10,1), MaxMatrix(13,14,15,0)}}; //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
 Direction input = RIGHT;
 uint64_t lastMovedMillis = 0;
 uint64_t lastUpdatedMillis = 0;
