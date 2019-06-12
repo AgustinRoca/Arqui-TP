@@ -30,7 +30,7 @@ void HighscoreHandler::registerScore(uint64_t score){
     if(scoreRanking <= maxScores){ // Si verdaderamente lo tengo que almacenar
       
       // Lo escribo en RAM para que quede ordenado
-      for(int64_t i=currentLoadedScores-1; i>=scoreRanking; i--){ // Muevo todo el array para dejar espacio al nuevo
+      for(int64_t i=(int64_t)currentLoadedScores-1; i>=scoreRanking; i--){ // Muevo todo el array para dejar espacio al nuevo
         scores[i+1] = scores[i];
       }
       scores[scoreRanking] = score; // Guardo el score en el lugar reservado para el

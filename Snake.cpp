@@ -67,6 +67,7 @@ void Snake::revive(uint16_t initialLength, Direction initialDirection, uint64_t 
   
   head = currentLength - 1;
   alive = true;
+  startTime = millis();
 }
 
 bool Snake::moveSnake(Direction newDirection, bool enlarge) {
