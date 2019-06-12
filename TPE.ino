@@ -15,7 +15,7 @@
 #define VERTICAL_MATRIXES_QTY 1
 
 /* Constantes que definen la intensidad de un LED para que se considere prendido o apagado */
-#define ON 8 //intensidad de led cuando se prende
+#define ON 1 //intensidad de led cuando se prende
 #define OFF 0 //intensidad de led cuando se apaga
 
 /* Constantes relacionadas con las condiciones iniciales de la vibora*/
@@ -24,7 +24,7 @@
 #define INIT_COL_POS 3
 #define INIT_WAIT 500 // Cantidad de ms que espera inicialmente hasta el siguiente movimiento de la vibora (velocidad)
 #define WAIT_DECREASE_RATIO 0.5 // Cambio de velocidad de la vibora (newWait = INIT_WAIT * WAIT_DECREASE_RATIO)
-#define SPEED_INCREASE_TIME 2000 // Tiempo en ms entre aumento de velocidades y aumento del tamanio de la vibora
+#define SPEED_INCREASE_TIME 15000 // Tiempo en ms entre aumento de velocidades y aumento del tamanio de la vibora
 #define INIT_DIR RIGHT
 
 /* Constantes utilizadas para el almacenamiento de maximas puntuaciones*/
@@ -35,7 +35,7 @@
 /* Constantes relacionadas a los pins usados para conectar las componentes a la placa*/
 #define LEFT_BUTTON_PIN 5 // Pin en la que se conecta la flechita izquierda
 #define RIGHT_BUTTON_PIN 3 // Pin en la que se conecta la flechita derecha
-#define DATA_PIN 11
+#define DATA_PIN 11 // DIN
 #define CLK_PIN 10 // Pin que se conecta al CLK de la matriz
 #define CS_PIN 13 // Pin que se conecta al CS de la matriz
 
@@ -94,9 +94,9 @@ void printMove(Position newHead, Position oldTail, MaxMatrix screen[VERTICAL_MAT
   screen[0][0].setDot(newHead.y, newHead.x, ON);
 }
 
-/* Imprime la carita triste cuando se pierde */
+/* Imprime la cruz cuando se pierde */
 void printSkull(MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY]){
-  byte sf[8]= {B00111100,B01000010,B10100101,B10000001,B10011001,B10100101,B01000010,B00111100};
+  byte sf[8]= {B00111100,B01000010,B10100101,B10011001,B10011001,B10100101,B01000010,B00111100};
   for(int i=0; i<MATRIX_COLUMNS * HORIZONTAL_MATRIXES_QTY; i++){
     screen[0][0].setColumn(7-i, sf[i]);
   }
