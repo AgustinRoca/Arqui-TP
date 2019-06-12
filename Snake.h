@@ -33,6 +33,7 @@ class Snake {
     bool isAlive();
 
     /* Setters */
+    void revive(uint16_t initialLength, Direction initialDirection, uint64_t initialSpeed, uint16_t initialRow, uint16_t initialColumn);
     bool moveSnake(Direction newDirection, bool enlarge);
     void setCurrentSpeed(uint64_t newSpeed);
 
