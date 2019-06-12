@@ -6,13 +6,15 @@
 void writeInEEPROM(uint64_t address, uint64_t data){
   Serial.println("Registering in ROM...");
   Serial.println("Data: ");
-  Serial.println((long) data, DEC);
+  Serial.print((uint32_t) data >> 32LL, HEX);
+  Serial.println((uint32_t) (data & 0xFFFFFFFFLL), HEX);
 
-  uint64_t byteToWrite = 0;
-  for(int j=sizeof(data)-1; j<=0; j--){
+  uint8_t byteToWrite = 0;
+  for(int j=sizeof(data)-1; j>=0; j--){
     byteToWrite = data & 0xFF; //Agarro el byte menos significativo
-    EEPROM.write(address, byteToWrite); //Lo meto en la posicion del final reservada para ese numero
+    EEPROM.write(address+j, byteToWrite); //Lo meto en la posicion del final reservada para ese numero
     data >>= BYTE_SIZE; //Me voy al proximo byte
+    Serial.println(byteToWrite);
   }
 }
 
@@ -35,21 +37,23 @@ HighscoreHandler::HighscoreHandler(uint32_t startingAddress,uint32_t maxScores){
 void HighscoreHandler::initializeScores(){
   //En los primeros 8 bytes se guarda la cantidad de scores que se guardaron en EEPROM
   uint64_t aux = 0;
-  for(int j=0; j<sizeof(aux); j++){
-      aux |= EEPROM.read(startingAddress + j);
-      Serial.println((long) aux, DEC);
-      aux <<= BYTE_SIZE;
+  for(int j=0; j<sizeof(aux) - 1; j++){
+      aux |= (uint64_t) (EEPROM.read(startingAddress + j));
+      aux <<= (uint64_t) BYTE_SIZE;
    }
+      aux |= (uint64_t) (EEPROM.read(startingAddress + sizeof(aux) - 1));
    currentLoadedScores = aux;
    Serial.print("Current Loaded Scores: ");
-   Serial.println((long) aux, DEC);
+  Serial.print((uint32_t) aux >> 32LL, HEX);
+  Serial.println((uint32_t) (aux & 0xFFFFFFFFLL), HEX);
     
   for(int i=1; i<currentLoadedScores + 1; i++){ //Corro 1 porque la primera posicion es la cantidad de scores en la ROM
     aux = 0;
-    for(int j=0; j<sizeof(aux); j++){
+    for(int j=0; j<sizeof(aux) - 1; j++){
       aux |= EEPROM.read(startingAddress + i*sizeof(*scores) + j);
-      aux <<= BYTE_SIZE;
-    }
+        aux <<= (uint64_t) BYTE_SIZE;
+     }
+      aux |= EEPROM.read(startingAddress + i*sizeof(*scores) + sizeof(aux) - 1);
     scores[i] = aux;
   }
 }
