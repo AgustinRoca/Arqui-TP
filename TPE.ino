@@ -38,6 +38,7 @@
 #define DATA_PIN 11 // DIN
 #define CLK_PIN 10 // Pin que se conecta al CLK de la matriz
 #define CS_PIN 13 // Pin que se conecta al CS de la matriz
+#define DIFICULTY_INTERVAL 0.3
 
 /* Traduce el boton apretado y devuelve la direccion en la que deberia seguir la vibora en base a ese boton, si no hubo boton apretado, sigue en la misma direccion que estaba */
 Direction translateInput(Direction currentDir, HighscoreHandler * highscore, InputHandler input, MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY], int * intensity){
@@ -107,11 +108,11 @@ void printMenu(HighscoreHandler * highscore,  MaxMatrix screen[VERTICAL_MATRIXES
   Serial.println("1. Play");
   Serial.println("2. Show Highscores");
   Serial.println("3. Reset Highscores");
-  Serial.println("4x. Set Intensity in x");
-  Serial.println("5. Dificulty");
+  Serial.println("4x. Set Intensity in x (x = (1..8))");
+  Serial.println("5x. Dificulty in x ( x = 1, 2 or 3)");
 }
 
-void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY],int * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input){
+void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix screen[VERTICAL_MATRIXES_QTY][HORIZONTAL_MATRIXES_QTY],int * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor){
   if(Serial.available()){
     char c = Serial.read(); //Deberiamos agregar un while(Serial.available()) para que lea todo el buffer por si se insertaron mas de una letra? Nos quedamos con la primera o la ultima?
     
@@ -136,6 +137,11 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix scree
         screen[0][0].setIntensity(*intensity);
         break;
       case '5': // Dificulty
+        *waitDecreaseRatioFactor = *waitTimeFactor = 1;
+        int dificulty = Serial.read() - '0' - 1;
+        for(int i=0; i<dificulty; i++){
+          *waitDecreaseRatioFactor = (*waitTimeFactor -= DIFICULTY_INTERVAL);
+        }
       break;
     }
     if(toupper(c) != '1' && c!='\r'){
@@ -155,6 +161,8 @@ bool enlarge = false; // True si hay que agrandar la vibora en el siguiente turn
 HighscoreHandler highscore;
 InputHandler inputHandler;
 int intensity = ON;
+double waitTimeFactor = 1;
+double waitDecreaseRatioFactor = 1;
 
 void setup() {
   // Inicializacion de botones
@@ -179,8 +187,8 @@ void setup() {
 
 void loop() {
   if(snake.isAlive()){
-    if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME){ // Si tengo que aumentar la velocidad y agrandar la snake
-      snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO);
+    if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
+      snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO * waitDecreaseRatioFactor);
       enlarge = true;
       
       lastUpdatedMillis = millis();
@@ -213,7 +221,7 @@ void loop() {
     }
   }
   else{
-    readMenuInput(&snake, &highscore, screen, &intensity, &lastUpdatedMillis, &lastMovedMillis, &input);
+    readMenuInput(&snake, &highscore, screen, &intensity, &lastUpdatedMillis, &lastMovedMillis, &input, &waitTimeFactor, &waitDecreaseRatioFactor);
   }
 }
   

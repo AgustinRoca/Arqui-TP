@@ -19,5 +19,4 @@ class InputHandler {
     int16_t getActivePin();
     int16_t readInputs();
 };
-
 #endif
