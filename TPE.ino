@@ -26,6 +26,7 @@
 #define WAIT_DECREASE_RATIO 0.5 // Cambio de velocidad de la vibora (newWait = INIT_WAIT * WAIT_DECREASE_RATIO)
 #define SPEED_INCREASE_TIME 15000 // Tiempo en ms entre aumento de velocidades y aumento del tamanio de la vibora
 #define INIT_DIR RIGHT
+#define DIFICULTY_INTERVAL 0.3
 
 /* Constantes utilizadas para el almacenamiento de maximas puntuaciones*/
 #define INITIAL_EEPROM_ADDRESS 0 // Posicion de la EEPROM desde la que se van a guardar los highscores
@@ -35,10 +36,9 @@
 /* Constantes relacionadas a los pins usados para conectar las componentes a la placa*/
 #define LEFT_BUTTON_PIN 5 // Pin en la que se conecta la flechita izquierda
 #define RIGHT_BUTTON_PIN 3 // Pin en la que se conecta la flechita derecha
-#define DATA_PIN 11 // DIN
+#define DATA_PIN 11 // Pin que se conecta al DIN de la matriz
 #define CLK_PIN 10 // Pin que se conecta al CLK de la matriz
 #define CS_PIN 13 // Pin que se conecta al CS de la matriz
-#define DIFICULTY_INTERVAL 0.3
 
 /* Limpia el serial */
 void cleanSerial(){
@@ -90,68 +90,41 @@ void printHighscores(HighscoreHandler highscore) {
   Serial.println("--------------------------------------------");
 }
 
-/* Prende todo el array de body en las matrices (hacer un clear antes de esto) */
-void printWholeBody(Position body[MAX_LENGTH], int currentLength, int head, MaxMatrix * screen, int intensity){
-  for(int i=0; i<currentLength; i++){
-    if(body[(MAX_LENGTH + head-i)%MAX_LENGTH].x < MATRIX_COLUMNS){ // Matrices izquierdas
-      if(body[(MAX_LENGTH + head-i)%MAX_LENGTH].y < MATRIX_ROWS){ // Matriz abajo-izquierda (1era matriz de la cascada)
-        screen->setDot(7-body[(MAX_LENGTH + head-i)%MAX_LENGTH].y, 7-body[(MAX_LENGTH + head-i)%MAX_LENGTH].x, intensity);
-      }
-      else{ // Matriz arriba-izquierda (3era matriz de la cascada)
-        screen->setDot(7-body[(MAX_LENGTH + head-i)%MAX_LENGTH].y, (7-(body[(MAX_LENGTH + head-i)%MAX_LENGTH].x % MATRIX_COLUMNS)) + 2*MATRIX_COLUMNS, intensity);
-      }
+/* Traduce la posicion pos a pixeles de la screen y la imprime con intensidad intensity,si se le manda una posicion valida la ignora */
+void setDotInScreen(Position pos, MaxMatrix * screen, int intensity){
+  if(pos.x < MATRIX_COLUMNS){ // Matrices izquierdas
+    if(pos.y < MATRIX_ROWS){ // Matriz abajo-izquierda (1era matriz de la cascada)
+      screen->setDot(7-pos.y, 7-pos.x, intensity);
     }
-    else{ // Matrices Derechas
-      if(body[(MAX_LENGTH + head-i)%MAX_LENGTH].y < MATRIX_ROWS){ // Matriz abajo-derecha (2da matriz de la cascada) ESTA INVERTIDA 
-        screen->setDot(body[(MAX_LENGTH + head-i)%MAX_LENGTH].y, (body[(MAX_LENGTH + head-i)%MAX_LENGTH].x % MATRIX_COLUMNS) + MATRIX_COLUMNS, intensity);
-      }
-      else{ // Matriz arriba-derecha (4ta matriz de la cascada) ESTA INVERTIDA
-        screen->setDot(body[(MAX_LENGTH + head-i)%MAX_LENGTH].y, (body[(MAX_LENGTH + head-i)%MAX_LENGTH].x % MATRIX_COLUMNS) + 3*MATRIX_COLUMNS, intensity);
-      }
+    else{ // Matriz arriba-izquierda (3era matriz de la cascada)
+      screen->setDot(7-pos.y, 7-(pos.x % MATRIX_COLUMNS) + 2*MATRIX_COLUMNS, intensity);
+    }
+  }
+  else{ // Matrices Derechas
+    if(pos.y < MATRIX_ROWS){ // Matriz abajo-derecha (2da matriz de la cascada). Como esta invertida se le saca el 7- a las posiciones
+      screen->setDot(pos.y, (pos.x % MATRIX_COLUMNS) + MATRIX_COLUMNS, intensity);
+    }
+    else{ // Matriz arriba-derecha (4ta matriz de la cascada). Como esta invertida se le saca el 7- a las posiciones
+      screen->setDot(pos.y, (pos.x % MATRIX_COLUMNS) + 3*MATRIX_COLUMNS, intensity);
     }
   }
 }
 
-/* Prende el LED de la nueva cabeza de la vibora, apaga el LED de la vieja cola de la snake */
-void printMove(Position newHead, Position oldTail, MaxMatrix * screen, int intensity){
-  if(oldTail.x < MATRIX_COLUMNS){ // Matrices izquierdas
-    if(oldTail.y < MATRIX_ROWS){ // Matriz abajo-izquierda (1era matriz de la cascada)
-      screen->setDot(7-oldTail.y, 7-oldTail.x, OFF);
-    }
-    else{ // Matriz arriba-izquierda (3era matriz de la cascada)
-      screen->setDot(7-oldTail.y, ((7-oldTail.x) % MATRIX_COLUMNS) + 2*MATRIX_COLUMNS, OFF);
-    }
+/* Prende todo el array de body en las matrices (asume que la pantalla esta limpia antes) */
+void printWholeBody(Position body[MAX_LENGTH], int currentLength, int head, MaxMatrix * screen, int intensity){
+  for(int i=0; i<currentLength; i++){
+    setDotInScreen(body[(MAX_LENGTH + head-i)%MAX_LENGTH], screen, intensity);
   }
-  else{ // Matrices Derechas
-    if(oldTail.y < MATRIX_ROWS){ // Matriz abajo-derecha (2da matriz de la cascada) ESTA INVERTIDA 
-      screen->setDot(oldTail.y, (oldTail.x % MATRIX_COLUMNS) + MATRIX_COLUMNS, OFF);
-    }
-    else{ // Matriz arriba-derecha (4ta matriz de la cascada) ESTA INVERTIDA
-      screen->setDot(oldTail.y, ((oldTail.x) % MATRIX_COLUMNS) + 3*MATRIX_COLUMNS, OFF);
-    }
-  }
+}
 
-  
-  if(newHead.x < MATRIX_COLUMNS){ // Matrices izquierdas
-    if(newHead.y < MATRIX_ROWS){ // Matriz abajo-izquierda (1era matriz de la cascada)
-      screen->setDot(7-newHead.y, 7-newHead.x, intensity);
-    }
-    else{ // Matriz arriba-izquierda (3era matriz de la cascada)
-      screen->setDot(7-newHead.y, (7-(newHead.x % MATRIX_COLUMNS)) + 2*MATRIX_COLUMNS, intensity);
-    }
-  }
-  else{ // Matrices Derechas
-    if(newHead.y < MATRIX_ROWS){ // Matriz abajo-derecha (2da matriz de la cascada) ESTA INVERTIDA 
-      screen->setDot(newHead.y, (newHead.x % MATRIX_COLUMNS) + MATRIX_COLUMNS, intensity);
-    }
-    else{ // Matriz arriba-derecha (4ta matriz de la cascada) ESTA INVERTIDA
-      screen->setDot(newHead.y, (newHead.x % MATRIX_COLUMNS) + 3*MATRIX_COLUMNS, intensity);
-    }
-  }
+/* Prende el LED de la nueva cabeza de la vibora, apaga el LED de la vieja cola de la vibora */
+void printMove(Position newHead, Position oldTail, MaxMatrix * screen, int intensity){
+  setDotInScreen(oldTail, screen, OFF);
+  setDotInScreen(newHead, screen, intensity);
 }
 
 /* Imprime la cruz cuando se pierde */
-void printSkull(MaxMatrix * screen){
+void printSkull(MaxMatrix * screen){ //TODO: ACTUALIZAR PARA 4 MATRICES
   byte sf[8]= {B00111100,B01000010,B10100101,B10011001,B10011001,B10100101,B01000010,B00111100};
   for(int i=0; i<MATRIX_COLUMNS * HORIZONTAL_MATRIXES_QTY; i++){
     screen->setColumn(7-i, sf[i]);
@@ -163,15 +136,15 @@ void printMenu(HighscoreHandler * highscore, int * intensity){
   Serial.println("1. Play");
   Serial.println("2. Show Highscores");
   Serial.println("3. Reset Highscores");
-  Serial.println("4x. Set Intensity in x (x = (1..8))");
-  Serial.println("5x. Dificulty in x ( x = 1, 2 or 3)");
+  Serial.println("4x. Set Intensity in x (x = (1..8))"); //Ejemplo: 41 = set Intensity in 1
+  Serial.println("5x. Dificulty in x ( x = 1, 2 or 3)"); //Ejemplo: 53 = set Dificulty in 3
   Serial.println("--------------------------------------------");
 }
 
+/* Lee la opcion del menu que se selecciono, y se ejecuta, si se le manda solo 4 o solo 5 se rompe (igual esto cambia cuando haya botones) */
 void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * screen,int * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor){
   if(Serial.available()){
     char c = Serial.read(); //Deberiamos agregar un while(Serial.available()) para que lea todo el buffer por si se insertaron mas de una letra? Nos quedamos con la primera o la ultima?
-    
     switch(toupper(c)){
       case '1': // Play
         snake->revive(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
@@ -199,6 +172,7 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
         }
       break;
     }
+    cleanSerial();
     if(toupper(c) != '1' && c!='\r'){
       printMenu(highscore, intensity);
     }
@@ -230,8 +204,10 @@ void setup() {
   screen.setIntensity(intensity);
   screen.clear();
 
+  //Inicializacion del manejador de puntajes maximos
   highscore = HighscoreHandler(INITIAL_EEPROM_ADDRESS, MAX_HIGHSCORES);
-  lastUpdatedMillis = lastMovedMillis = millis();
+
+  //Se imprime el menu
   printMenu(&highscore, &intensity);
 }
 
@@ -244,30 +220,26 @@ void loop() {
       lastUpdatedMillis = millis();
     }
   
-    if(snake.isAlive()){
-  
-      // Si hubo tecla, devuelve la direccion en la que deberia ir la vibora ahora
-      input = translateInput(input, &highscore, inputHandler, screen, &intensity);
-      
-      if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
-        Position oldTail = snake.getBody()[(MAX_LENGTH + snake.getHead() - (snake.getCurrentLength() - 1) ) % MAX_LENGTH]; // Guardo la cola de la vibora para apagar despues (La guardo por si estamos en el caso limite en que el head pise a la cola en el array de body)
-        snake.moveSnake(input, enlarge);
-      
-        if(snake.isAlive()) // Si sigue viva despues de ese movimiento
-          printMove(snake.getBody()[snake.getHead()], oldTail, &screen, intensity); // Actualizo la pantalla
-        else{
-          printSkull(&screen); // Imprimo la pantalla de GAME OVER
-          snake.freeSnake(); // Libera solo el body, no es un destructor
-          highscore.registerScore(snake.getAliveTime()); // Si fue un highscore, lo guarda
-          delay(1000);
-          printMenu(&highscore, &intensity);
-        }
-        enlarge = false; // Si lo agrandaba, ya no lo tengo que agrandar
-        
-        lastMovedMillis = millis();
+    // Si hubo tecla, devuelve la direccion en la que deberia ir la vibora ahora
+    input = translateInput(input, &highscore, inputHandler, screen, &intensity);
+    
+    if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
+      Position oldTail = snake.getBody()[(MAX_LENGTH + snake.getHead() - (snake.getCurrentLength() - 1) ) % MAX_LENGTH]; // Guardo la cola de la vibora para apagar despues (La guardo por si estamos en el caso limite en que el head pise a la cola en el array de body)
+      snake.moveSnake(input, enlarge);
+      enlarge = false; // Si lo agrandaba, ya no lo tengo que agrandar
+    
+      if(snake.isAlive()){ // Si sigue viva despues de ese movimiento
+        printMove(snake.getBody()[snake.getHead()], oldTail, &screen, intensity); // Actualizo la pantalla 
       }
-    } else{
-      input = translateInput(input, &highscore, inputHandler, screen, &intensity); // Por si quiero hacer un print o reset
+      else{
+        printSkull(&screen); // Imprimo la pantalla de GAME OVER
+        snake.freeSnake(); // Libera solo el body, no es un destructor
+        highscore.registerScore(snake.getAliveTime()); // Si fue un highscore, lo guarda
+        delay(1000); // Para que se vea la pantalla de GAME OVER
+        printMenu(&highscore, &intensity);
+      }
+      
+      lastMovedMillis = millis();
     }
   }
   else{
