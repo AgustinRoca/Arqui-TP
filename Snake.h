@@ -32,9 +32,8 @@ class Snake {
     uint16_t getHead();
     bool isAlive();
 
-    /* Setters */
-    void revive(uint16_t initialLength, Direction initialDirection, uint64_t initialSpeed, uint16_t initialRow, uint16_t initialColumn);
-    bool moveSnake(Direction newDirection, bool enlarge);
+    void revive(uint16_t initialLength, Direction initialDirection, uint64_t initialSpeed, uint16_t initialRow, uint16_t initialColumn); // Empieza un nuevo juego
+    bool moveSnake(Direction newDirection, bool enlarge); // Mueve la serpiente en la direccion del parametro, no elimina la cola si enlarge = true
     void setCurrentSpeed(uint64_t newSpeed);
 
     /* Libera el espacio almacenado en heap por el arreglo de body */

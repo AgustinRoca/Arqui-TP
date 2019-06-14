@@ -10,7 +10,7 @@ Snake::Snake(uint16_t initialLength, Direction initialDirection, uint64_t initia
   rows = _rows;
   
   body = (Position *)malloc(rows * columns * sizeof(*body));
-  // TODO: Corregir esto para soportar diferentes initial directions
+  // TODO: Corregir esto para soportar diferentes initial directions HABRIA QUE HACER UN SWITCH
   //La serpiente empieza en linea recta mirando para la derecha
   for(uint16_t i=0; i < initialLength; i++){
     body[i].y = initialRow;
@@ -77,7 +77,7 @@ bool Snake::moveSnake(Direction newDirection, bool enlarge) {
 
   uint64_t possibleStopTime = millis();  // Don't account for time spent on routine
   
-  switch(newDirection){
+  switch(newDirection){ // CREO QUE SE PUEDE SACAR LOS IFS, casi seguro
     case UP:
       if(currentDirection != DOWN){
         body[(head+1) % (rows * columns)].x = body[head].x;

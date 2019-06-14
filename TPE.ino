@@ -40,6 +40,7 @@
 #define CLK_PIN 10 // Pin que se conecta al CLK de la matriz
 #define CS_PIN 13 // Pin que se conecta al CS de la matriz
 
+/* PROBABLEMENTE SE ELIMINE CUANDO HAYA BOTONES */
 /* Limpia el serial */
 void cleanSerial(){
   while(Serial.available()){
@@ -47,6 +48,7 @@ void cleanSerial(){
   }
 }
 
+/* SE CAMBIA CUANDO HAYA BOTONES */
 /* Traduce el boton apretado y devuelve la direccion en la que deberia seguir la vibora en base a ese boton, si no hubo boton apretado, sigue en la misma direccion que estaba */
 Direction translateInput(Direction currentDir, HighscoreHandler * highscore, InputHandler input, MaxMatrix screen, int * intensity){
   if(Serial.available()){
@@ -75,6 +77,8 @@ Direction translateInput(Direction currentDir, HighscoreHandler * highscore, Inp
     return currentDir;
 }
 
+
+/* SE CAMBIA CUANDO HAYA LCD */
 /* Imprime los puntajes maximos que se almacenaron (en Serial por ahora) */
 void printHighscores(HighscoreHandler highscore) {
   Serial.println("Puntajes Maximos:");
@@ -97,7 +101,7 @@ void setDotInScreen(Position pos, MaxMatrix * screen, int intensity){
       screen->setDot(7-pos.y, 7-pos.x, intensity);
     }
     else{ // Matriz arriba-izquierda (3era matriz de la cascada)
-      screen->setDot(7-pos.y, 7-(pos.x % MATRIX_COLUMNS) + 2*MATRIX_COLUMNS, intensity);
+      screen->setDot(7-(pos.y % MATRIX_ROWS), 7-(pos.x % MATRIX_COLUMNS) + 2*MATRIX_COLUMNS, intensity);
     }
   }
   else{ // Matrices Derechas
@@ -105,7 +109,7 @@ void setDotInScreen(Position pos, MaxMatrix * screen, int intensity){
       screen->setDot(pos.y, (pos.x % MATRIX_COLUMNS) + MATRIX_COLUMNS, intensity);
     }
     else{ // Matriz arriba-derecha (4ta matriz de la cascada). Como esta invertida se le saca el 7- a las posiciones
-      screen->setDot(pos.y, (pos.x % MATRIX_COLUMNS) + 3*MATRIX_COLUMNS, intensity);
+      screen->setDot(pos.y % MATRIX_ROWS, (pos.x % MATRIX_COLUMNS) + 3*MATRIX_COLUMNS, intensity);
     }
   }
 }
@@ -125,12 +129,22 @@ void printMove(Position newHead, Position oldTail, MaxMatrix * screen, int inten
 
 /* Imprime la cruz cuando se pierde */
 void printSkull(MaxMatrix * screen){ //TODO: ACTUALIZAR PARA 4 MATRICES
-  byte sf[8]= {B00111100,B01000010,B10100101,B10011001,B10011001,B10100101,B01000010,B00111100};
-  for(int i=0; i<MATRIX_COLUMNS * HORIZONTAL_MATRIXES_QTY; i++){
-    screen->setColumn(7-i, sf[i]);
+  byte skull1[8]= {B00011001,B00001111,B00001111,B00000011,B00110010,B00010000,B00000000,B00000000}; //Parte que deberia ir en la matriz abajo-izquierda
+  byte skull2[8]= {B00000000,B00000000,B00100000,B01100101,B00000111,B00011110,B00011111,B00110011}; //Parte que deberia ir en la matriz abajo-derecha
+  byte skull3[8]= {B00000000,B00010000,B00110000,B00000111,B00001111,B00001111,B00011100,B00011000}; //Parte que deberia ir en la 3era matriz arriba-izquierda
+  byte skull4[8]= {B00110001,B00111001,B00011111,B00011111,B00001111,B01100000,B00100000,B00000000}; //Parte que deberia ir en la 4ta matriz arriba-derecha
+  for(int i=0; i<8; i++){
+    screen->setColumn(i+2*MATRIX_COLUMNS, skull3[i]);
+    screen->setColumn(i, skull1[i]);
+  }
+  for(int i=0; i<8; i++){
+    screen->setColumn(i+3*MATRIX_COLUMNS, skull4[i]);
+    screen->setColumn(i+MATRIX_COLUMNS, skull2[i]);
   }
 }
 
+
+/* SE CAMBIA CUANDO HAYA LCD */
 void printMenu(HighscoreHandler * highscore, int * intensity){
   Serial.println("\nSNAKE\n");
   Serial.println("1. Play");
@@ -141,6 +155,8 @@ void printMenu(HighscoreHandler * highscore, int * intensity){
   Serial.println("--------------------------------------------");
 }
 
+
+/* SE CAMBIA CUANDO HAYA BOTONES */
 /* Lee la opcion del menu que se selecciono, y se ejecuta, si se le manda solo 4 o solo 5 se rompe (igual esto cambia cuando haya botones) */
 void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * screen,int * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor){
   if(Serial.available()){
@@ -197,6 +213,9 @@ void setup() {
   inputHandler.registerPin(RIGHT_BUTTON_PIN, HIGH);
   inputHandler.registerPin(LEFT_BUTTON_PIN, HIGH);
 
+  //INICIALIZACION DE LCD
+  
+  /* SE ELIMINA CUANDO HAYA BOTONES */
   Serial.begin(115200);
   
   //Inicializacion de las matrices de LEDs

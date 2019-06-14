@@ -10,7 +10,7 @@ HighscoreHandler::HighscoreHandler(uint32_t startingAddress,uint32_t maxScores){
   this->startingAddress = startingAddress;
   this->maxScores = maxScores;
   currentLoadedScores = 0;
-  scores = (uint64_t*)malloc((maxScores+1) * sizeof(*scores)); // + 1 porque en la primera posicion se guarda la cantidad de highscores
+  scores = (uint64_t*)malloc(maxScores * sizeof(*scores)); // + 1 porque en la primera posicion se guarda la cantidad de highscores
   initializeScores();
 }
 
