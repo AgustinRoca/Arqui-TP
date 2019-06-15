@@ -5,6 +5,7 @@
 #include "Position.h"
 #include "Snake.h"
 #include "InputHandler.h"
+#include "SnakeFront.h"
 
 /* Constantes relacionadas con el tamanio/cantidad de las matrices*/
 #define MATRIX_COLUMNS 8 // Cantidad de columnas de LEDs que tiene UNA matriz
@@ -13,6 +14,9 @@
 #define MAX_LENGTH (MATRIX_SIZE * VERTICAL_MATRIXES_QTY * HORIZONTAL_MATRIXES_QTY) // Cantidad total de LEDs totals que tiene la pantalla completa (la vibora no puede ser mas grande que eso tampoco)
 #define HORIZONTAL_MATRIXES_QTY 2
 #define VERTICAL_MATRIXES_QTY 2
+
+#define LCD_COLS 20
+#define LCD_ROWS 4
 
 /* Constantes que definen la intensidad de un LED para que se considere prendido o apagado */
 #define ON 8 //intensidad de led cuando se prende
@@ -34,11 +38,14 @@
 
 
 /* Constantes relacionadas a los pins usados para conectar las componentes a la placa*/
-#define LEFT_BUTTON_PIN 5 // Pin en la que se conecta la flechita izquierda
-#define RIGHT_BUTTON_PIN 3 // Pin en la que se conecta la flechita derecha
+#define LEFT_BUTTON_PIN 2 // Pin en la que se conecta la flechita izquierda
+#define RIGHT_BUTTON_PIN 4 // Pin en la que se conecta la flechita derecha
+#define SELECT_BUTTON_PIN 6
 #define DATA_PIN 11 // Pin que se conecta al DIN de la matriz
 #define CLK_PIN 10 // Pin que se conecta al CLK de la matriz
 #define CS_PIN 13 // Pin que se conecta al CS de la matriz
+#define CONTRAST_PIN 3
+#define BRIGHTNESS_PIN 5
 
 /* PROBABLEMENTE SE ELIMINE CUANDO HAYA BOTONES */
 /* Limpia el serial */
@@ -47,6 +54,8 @@ void cleanSerial(){
     Serial.read();
   }
 }
+
+SnakeFront snakeFront;
 
 /* SE CAMBIA CUANDO HAYA BOTONES */
 /* Traduce el boton apretado y devuelve la direccion en la que deberia seguir la vibora en base a ese boton, si no hubo boton apretado, sigue en la misma direccion que estaba */
@@ -60,7 +69,7 @@ Direction translateInput(Direction currentDir, HighscoreHandler * highscore, Inp
       case 'D': // Flecha derecha
         return currentDir = (Direction) ((currentDir + 1) % 4);  // Giro en sentido horario
       case 'P': // 'P'rint
-        printHighscores(*highscore);
+        snakeFront.printHighscores();
         return currentDir;
       case 'R': // 'R'eset
         highscore->resetScores();
@@ -77,85 +86,6 @@ Direction translateInput(Direction currentDir, HighscoreHandler * highscore, Inp
     return currentDir;
 }
 
-
-/* SE CAMBIA CUANDO HAYA LCD */
-/* Imprime los puntajes maximos que se almacenaron (en Serial por ahora) */
-void printHighscores(HighscoreHandler highscore) {
-  Serial.println("Puntajes Maximos:");
-  if (highscore.getScoresAmmount() > 0) {
-    for(int i=0; i<highscore.getScoresAmmount(); i++){
-      Serial.print(i+1, DEC);
-      Serial.print(". ");
-      Serial.println((long)highscore.getScores()[i], DEC);
-    }
-  } else {
-    Serial.println("No hay puntajes registrados");
-  }
-  Serial.println("--------------------------------------------");
-}
-
-/* Traduce la posicion pos a pixeles de la screen y la imprime con intensidad intensity,si se le manda una posicion valida la ignora */
-void setDotInScreen(Position pos, MaxMatrix * screen, int intensity){
-  if(pos.x < MATRIX_COLUMNS){ // Matrices izquierdas
-    if(pos.y < MATRIX_ROWS){ // Matriz abajo-izquierda (1era matriz de la cascada)
-      screen->setDot(7-pos.y, 7-pos.x, intensity);
-    }
-    else{ // Matriz arriba-izquierda (3era matriz de la cascada)
-      screen->setDot(7-(pos.y % MATRIX_ROWS), 7-(pos.x % MATRIX_COLUMNS) + 2*MATRIX_COLUMNS, intensity);
-    }
-  }
-  else{ // Matrices Derechas
-    if(pos.y < MATRIX_ROWS){ // Matriz abajo-derecha (2da matriz de la cascada). Como esta invertida se le saca el 7- a las posiciones
-      screen->setDot(pos.y, (pos.x % MATRIX_COLUMNS) + MATRIX_COLUMNS, intensity);
-    }
-    else{ // Matriz arriba-derecha (4ta matriz de la cascada). Como esta invertida se le saca el 7- a las posiciones
-      screen->setDot(pos.y % MATRIX_ROWS, (pos.x % MATRIX_COLUMNS) + 3*MATRIX_COLUMNS, intensity);
-    }
-  }
-}
-
-/* Prende todo el array de body en las matrices (asume que la pantalla esta limpia antes) */
-void printWholeBody(Position body[MAX_LENGTH], int currentLength, int head, MaxMatrix * screen, int intensity){
-  for(int i=0; i<currentLength; i++){
-    setDotInScreen(body[(MAX_LENGTH + head-i)%MAX_LENGTH], screen, intensity);
-  }
-}
-
-/* Prende el LED de la nueva cabeza de la vibora, apaga el LED de la vieja cola de la vibora */
-void printMove(Position newHead, Position oldTail, MaxMatrix * screen, int intensity){
-  setDotInScreen(oldTail, screen, OFF);
-  setDotInScreen(newHead, screen, intensity);
-}
-
-/* Imprime la cruz cuando se pierde */
-void printSkull(MaxMatrix * screen){ //TODO: ACTUALIZAR PARA 4 MATRICES
-  byte skull1[8]= {B00011001,B00001111,B00001111,B00000011,B00110010,B00010000,B00000000,B00000000}; //Parte que deberia ir en la matriz abajo-izquierda
-  byte skull2[8]= {B00000000,B00000000,B00100000,B01100101,B00000111,B00011110,B00011111,B00110011}; //Parte que deberia ir en la matriz abajo-derecha
-  byte skull3[8]= {B00000000,B00010000,B00110000,B00000111,B00001111,B00001111,B00011100,B00011000}; //Parte que deberia ir en la 3era matriz arriba-izquierda
-  byte skull4[8]= {B00110001,B00111001,B00011111,B00011111,B00001111,B01100000,B00100000,B00000000}; //Parte que deberia ir en la 4ta matriz arriba-derecha
-  for(int i=0; i<8; i++){
-    screen->setColumn(i+2*MATRIX_COLUMNS, skull3[i]);
-    screen->setColumn(i, skull1[i]);
-  }
-  for(int i=0; i<8; i++){
-    screen->setColumn(i+3*MATRIX_COLUMNS, skull4[i]);
-    screen->setColumn(i+MATRIX_COLUMNS, skull2[i]);
-  }
-}
-
-
-/* SE CAMBIA CUANDO HAYA LCD */
-void printMenu(HighscoreHandler * highscore, int * intensity){
-  Serial.println("\nSNAKE\n");
-  Serial.println("1. Play");
-  Serial.println("2. Show Highscores");
-  Serial.println("3. Reset Highscores");
-  Serial.println("4x. Set Intensity in x (x = (1..8))"); //Ejemplo: 41 = set Intensity in 1
-  Serial.println("5x. Dificulty in x ( x = 1, 2 or 3)"); //Ejemplo: 53 = set Dificulty in 3
-  Serial.println("--------------------------------------------");
-}
-
-
 /* SE CAMBIA CUANDO HAYA BOTONES */
 /* Lee la opcion del menu que se selecciono, y se ejecuta, si se le manda solo 4 o solo 5 se rompe (igual esto cambia cuando haya botones) */
 void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * screen,int * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor){
@@ -165,12 +95,12 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
       case '1': // Play
         snake->revive(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
         screen->clear();
-        printWholeBody(snake->getBody(), snake->getCurrentLength(), snake->getHead(), screen, *intensity);
+        snakeFront.printWholeBody(snake->getBody(), snake->getCurrentLength(), snake->getHead());
         *lastUpdatedMillis = *lastMovedMillis = millis();
         *input = INIT_DIR;
       break;
       case '2': // Show Highscores
-        printHighscores(*highscore);
+        snakeFront.printHighscores();
         delay(2000);
       break;
       case '3': // Reset Highscores
@@ -190,7 +120,7 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
     }
     cleanSerial();
     if(toupper(c) != '1' && c!='\r'){
-      printMenu(highscore, intensity);
+      snakeFront.printMenu();
     }
   }
 }
@@ -208,26 +138,41 @@ int intensity = ON;
 double waitTimeFactor = 1;
 double waitDecreaseRatioFactor = 1;
 
+LCD lcd(A5, A4, A3, A2, A1, A0);
+
 void setup() {
   // Inicializacion de botones
-  inputHandler.registerPin(RIGHT_BUTTON_PIN, HIGH);
-  inputHandler.registerPin(LEFT_BUTTON_PIN, HIGH);
+  inputHandler.registerPin(SELECT_BUTTON_PIN, LOW);
+  inputHandler.registerPin(RIGHT_BUTTON_PIN, LOW);
+  inputHandler.registerPin(LEFT_BUTTON_PIN, LOW);
 
   //INICIALIZACION DE LCD
+  lcd.begin(LCD_ROWS, LCD_COLS);
+  lcd.clear();
+  lcd.setContrastPin(CONTRAST_PIN);
+  lcd.setBrightnessPin(BRIGHTNESS_PIN);
+  lcd.setRows(LCD_ROWS);
+  lcd.setCols(LCD_COLS);
+  lcd.setStartingCol(0);
+  lcd.setContinuous(false);
+  lcd.setCharacterTimeout(500);
+  lcd.setContrast(50);
+  lcd.setBrightness(255);
   
   /* SE ELIMINA CUANDO HAYA BOTONES */
   Serial.begin(115200);
-  
+ 
   //Inicializacion de las matrices de LEDs
   screen.init();
   screen.setIntensity(intensity);
   screen.clear();
 
   //Inicializacion del manejador de puntajes maximos
-  highscore = HighscoreHandler(INITIAL_EEPROM_ADDRESS, MAX_HIGHSCORES);
-
+  highscore.initialize(INITIAL_EEPROM_ADDRESS, MAX_HIGHSCORES);
+  snakeFront.initialize(&highscore, &lcd, &screen, &snake, MATRIX_ROWS, MATRIX_ROWS, LCD_ROWS, LCD_COLS, MAX_LENGTH);
+  
   //Se imprime el menu
-  printMenu(&highscore, &intensity);
+  snakeFront.printMenu();
 }
 
 void loop() {
@@ -248,14 +193,14 @@ void loop() {
       enlarge = false; // Si lo agrandaba, ya no lo tengo que agrandar
     
       if(snake.isAlive()){ // Si sigue viva despues de ese movimiento
-        printMove(snake.getBody()[snake.getHead()], oldTail, &screen, intensity); // Actualizo la pantalla 
+        snakeFront.printMove(snake.getBody()[snake.getHead()], oldTail); // Actualizo la pantalla 
       }
       else{
-        printSkull(&screen); // Imprimo la pantalla de GAME OVER
+        snakeFront.printSkull(); // Imprimo la pantalla de GAME OVER
         snake.freeSnake(); // Libera solo el body, no es un destructor
         highscore.registerScore(snake.getAliveTime()); // Si fue un highscore, lo guarda
         delay(1000); // Para que se vea la pantalla de GAME OVER
-        printMenu(&highscore, &intensity);
+        snakeFront.printMenu();
       }
       
       lastMovedMillis = millis();

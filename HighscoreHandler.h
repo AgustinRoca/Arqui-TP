@@ -6,7 +6,6 @@
 #include "Utilities.h"
 
 class HighscoreHandler {
-  
   private:
     uint32_t startingAddress; // Posicion inicial de la EEPROM que se utiliza
     uint32_t maxScores; // Cantidad maxima de puntajes almacenados
@@ -28,9 +27,11 @@ class HighscoreHandler {
     void initializeScores();
     
   public:
-    /* Constructores */
+    /* Constructor */
     HighscoreHandler();
-    HighscoreHandler(uint32_t startingAddress,uint32_t maxScores);
+    
+    /* Inicializador */
+    void initialize(uint32_t startingAddress,uint32_t maxScores);
 
     /* Getters */
     uint32_t getScoresAmmount();

@@ -3,10 +3,10 @@
 #define CHUNK 5
 
 InputHandler::InputHandler() {
-  activeTypes = (uint8_t*) malloc(CHUNK * (sizeof(*pins)));
+  activeTypes = (uint8_t*) malloc(CHUNK * (sizeof(*activeTypes)));
+  activePins = (uint8_t*) malloc(CHUNK * (sizeof(*activePins)));
   pins = (uint8_t*) malloc(CHUNK * (sizeof(*pins)));
   currentLenght = CHUNK;
-  activePin = -1;
   count = 0;
 }
 
@@ -19,37 +19,32 @@ void InputHandler::registerPin(uint8_t pin, uint8_t activeType, bool internalPul
   
   count++;
   if (count == currentLenght) {
-    activeTypes = (uint8_t*) realloc(activeTypes, sizeof(*pins) * (CHUNK + count));
+    activeTypes = (uint8_t*) realloc(activeTypes, sizeof(*activeTypes) * (CHUNK + count));
+    activePins = (uint8_t*) realloc(activePins, sizeof(*activePins) * (CHUNK + count));
     pins = (uint8_t*) realloc(pins, sizeof(*pins) * (CHUNK + count));
-    currentLenght = CHUNK;
+    currentLenght = CHUNK + count;
   }
+  
+  activeTypes[count - 1] = activeType;
+  pins[count - 1] = pin;
 }
 
 void InputHandler::registerPin(uint8_t pin, uint8_t activeType) {
   registerPin(pin, activeType, false);
 }
 
-int16_t InputHandler::getActivePin() {
-  return activePin;
+uint8_t InputHandler::getActivePinsCount() {
+  return activePinsCount;
 }
 
-int16_t InputHandler::readInputs() {
-  bool found = false;
+const uint8_t* InputHandler::readInputs() {
+  activePinsCount = 0;
   
-  for (uint8_t ix = 0; ix < count && !found; ix++) {
-    Serial.print("Read: ");
-    Serial.print(digitalRead(pins[ix]));
-    Serial.print(" ");
-    Serial.println(activeTypes[ix]);
+  for (uint8_t ix = 0; ix < count; ix++) {
     if (digitalRead(pins[ix]) == activeTypes[ix]) {
-      activePin = pins[ix];
-      found = true;
+      activePins[activePinsCount++] = pins[ix];
     }
   }
   
-  if (!found) {
-    activePin = -1;
-  }
-  
-  return activePin;
+  return activePins;
 }
