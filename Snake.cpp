@@ -8,6 +8,7 @@ Snake::Snake(uint16_t initialLength, Direction initialDirection, uint64_t initia
   alive = false;
   columns = _columns;
   rows = _rows;
+  startTime = millis();
   
   body = (Position *)malloc(rows * columns * sizeof(*body));
   // TODO: Corregir esto para soportar diferentes initial directions HABRIA QUE HACER UN SWITCH
@@ -59,6 +60,8 @@ void Snake::revive(uint16_t initialLength, Direction initialDirection, uint64_t 
   currentDirection = initialDirection;
   currentLength = initialLength;
   currentSpeed = initialSpeed;
+  freeSnake();
+  
   body = (Position *)malloc(rows * columns * sizeof(*body));
   for(uint16_t i=0; i < initialLength; i++){
     body[i].y = initialRow;
@@ -146,5 +149,8 @@ bool Snake::moveSnake(Direction newDirection, bool enlarge) {
 }
 
 void Snake::freeSnake(){
-  free(body);
+  if (body != NULL) {
+    free(body);
+    body = NULL;
+  }
 }

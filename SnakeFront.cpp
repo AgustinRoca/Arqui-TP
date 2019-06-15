@@ -97,9 +97,9 @@ void SnakeFront::setDotInScreen(Position pos) {
 }
 
 /* Prende todo el array de body en las matrices (asume que la pantalla esta limpia antes) */
-void SnakeFront::printWholeBody(Position* body, int currentLength, int head) {
-  for(int i=0; i<currentLength; i++){
-    setDotInScreen(body[(snakeMaxLength + head-i)%snakeMaxLength], matrixIntensity);
+void SnakeFront::printWholeBody() {
+  for(uint16_t i = 0; i < snake->getCurrentLength(); i++){
+    setDotInScreen(snake->getBody()[(snakeMaxLength + snake->getHead() - i) % snakeMaxLength], matrixIntensity);
   }
 }
 
@@ -130,12 +130,14 @@ void SnakeFront::printSkull() { //TODO: ACTUALIZAR PARA 4 MATRICES
 /* SE CAMBIA CUANDO HAYA LCD */
 void SnakeFront::printMenu(){
   Serial.println("\nSNAKE\n");
-  Serial.println("1. Play");
-  Serial.println("2. Show Highscores");
-  Serial.println("3. Reset Highscores");
-  Serial.println("4x. Set Intensity in x (x = (1..8))"); //Ejemplo: 41 = set Intensity in 1
-  Serial.println("5x. Dificulty in x ( x = 1, 2 or 3)"); //Ejemplo: 53 = set Dificulty in 3
-  Serial.println("--------------------------------------------");
-  lcd->print("TEST");
+  Serial.println("1.P");
+  Serial.println("2.ShowHighss");
+  Serial.println("3.ResHighss");
+  Serial.println("4x.Intensity in x(x=(1..8))"); //Ejemplo: 41 = set Intensity in 1
+  Serial.println("5x.Dif in x(x=1,2,3)"); //Ejemplo: 53 = set Dificulty in 3
+  Serial.println("6x.Contrast in x(x=(1..8))"); //Ejemplo: 61 = set Contrast in 1
+  Serial.println("---");
+  lcd->clear();
+  lcd->print("M");
 }
 

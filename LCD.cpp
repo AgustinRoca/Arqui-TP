@@ -75,8 +75,7 @@ void LCD::setText(char* _text, uint8_t _line) {
   if (text != NULL)
     textLenght = strlen(text);
   
-  if (_line < rows)
-    line = _line;
+  line = _line < rows ? line : rows - 1;
 }
 
 void LCD::setContinuous(bool _continuous) {
@@ -87,6 +86,7 @@ void LCD::setBrightnessPin(int16_t pin) {
   brightnessPin = pin;
   if (brightnessPin >= 0) {
     pinMode(pin, OUTPUT);
+    analogWrite(pin, 0);
   }
 }
 
@@ -94,6 +94,7 @@ void LCD::setContrastPin(int16_t pin) {
   contrastPin = pin;
   if (contrastPin >= 0) {
     pinMode(pin, OUTPUT);
+    analogWrite(pin, 0);
   }
 }
 

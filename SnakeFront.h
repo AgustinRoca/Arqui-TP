@@ -35,13 +35,13 @@ class SnakeFront {
                     uint8_t _lcdRows,
                     uint8_t _lcdCols,
                     uint8_t _snakeMaxLength);
-    void printWholeBody(Position* body, int currentLength, int head);
     void printMove(Position newHead, Position oldTail);
     void setMatrixIntensity(uint8_t intensity);
     void setLCDIntensity(uint8_t intensity);
     void setLCDContrast(uint8_t contrast);
     void setDotInScreen(Position pos);
     void printHighscores();
+    void printWholeBody();
     void printSkull();
     void printMenu();
 };

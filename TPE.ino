@@ -105,20 +105,21 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
       case '1': // Play
         snake->revive(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
         screen->clear();
-        snakeFront.printWholeBody(snake->getBody(), snake->getCurrentLength(), snake->getHead());
+        snakeFront.printWholeBody();
         *lastUpdatedMillis = *lastMovedMillis = millis();
         *input = INIT_DIR;
       break;
       case '2': // Show Highscores
         snakeFront.printHighscores();
-        delay(2000);
       break;
       case '3': // Reset Highscores
         highscore->resetScores();
         break;
       case '4': // Set intensity
         *intensity = Serial.read() - '0';
-        screen->setIntensity(*intensity);
+        snakeFront.setMatrixIntensity(*intensity);
+        snakeFront.setLCDIntensity(*intensity);
+        Serial.println(*intensity);
         break;
       case '5': // Dificulty
         *waitDecreaseRatioFactor = *waitTimeFactor = 1;
@@ -127,6 +128,11 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
           *waitDecreaseRatioFactor = (*waitTimeFactor -= DIFICULTY_INTERVAL);
         }
       break;
+      case '6': // Set contrast
+        uint8_t contrast = Serial.read() - '0';
+        Serial.println(contrast);
+        snakeFront.setLCDContrast(0);
+        break;
     }
     cleanSerial();
     if(toupper(c) != '1' && c!='\r'){
@@ -186,7 +192,7 @@ void setup() {
   // Inicializacion del manejador de puntajes maximos
   highscore = HighscoreHandler(INITIAL_EEPROM_ADDRESS, MAX_HIGHSCORES);
   
-  // Inicializacino FrontEnd
+  // Inicializacion FrontEnd
   snakeFront.initialize(&highscore, &lcd, &screen, &snake, MATRIX_ROWS, MATRIX_ROWS, LCD_ROWS, LCD_COLS, MAX_LENGTH);
   snakeFront.setMatrixIntensity(intensity);
   
@@ -199,7 +205,7 @@ void loop() {
     if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
       snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO * waitDecreaseRatioFactor);
       enlarge = true;
-      
+
       lastUpdatedMillis = millis();
     }
   
@@ -221,7 +227,8 @@ void loop() {
         delay(1000); // Para que se vea la pantalla de GAME OVER
         snakeFront.printMenu();
       }
-      
+
+      Serial.println("Alvie");
       lastMovedMillis = millis();
     }
   }

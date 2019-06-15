@@ -30,19 +30,23 @@ void HighscoreHandler::registerScore(uint64_t score){
     if(scoreRanking <= maxScores){ // Si verdaderamente lo tengo que almacenar
       
       // Lo escribo en RAM para que quede ordenado
-      for(int64_t i=(int64_t)currentLoadedScores-1; i>=scoreRanking; i--){ // Muevo todo el array para dejar espacio al nuevo
+      if (currentLoadedScores < maxScores) {
+        scores[currentLoadedScores + 1] = scores[currentLoadedScores];
+      }
+
+      for(int64_t i=(int64_t)currentLoadedScores-2; i>=scoreRanking; i--){ // Muevo todo el array para dejar espacio al nuevo
         scores[i+1] = scores[i];
       }
       scores[scoreRanking] = score; // Guardo el score en el lugar reservado para el
-      if(currentLoadedScores < maxScores) // Si tengo mas elementos que antes
+      if(currentLoadedScores < maxScores) { // Si tengo mas elementos que antes
         currentLoadedScores++; 
+        writeInEEPROM(startingAddress, currentLoadedScores);
+      }
 
       // Lo escribo en EEPROM ordenado, aprovechando que ya lo ordene en RAM
       for(int64_t i=currentLoadedScores-1; i>=scoreRanking; i--){ // Sobreescribo solamente los valores cambiados
         writeInEEPROM(startingAddress + (i+1)*sizeof(*scores), scores[i]); // Corro uno en la EEPROM por el valor de la cantidad de scores ( i+1 porque en la posicion 0 esta la cantidad de scores almacenados )
-        writeInEEPROM(startingAddress, currentLoadedScores);
       }
-
     }
 }
 
@@ -54,7 +58,10 @@ void HighscoreHandler::resetScores(){
 
 /* Libera el espacio reservado en heap para el arreglo de scores */
 void HighscoreHandler::freeScores(){
-  free(scores);
+  if (scores != NULL) {
+    free(scores);
+    scores = NULL;
+  }
 }
 
 /* ------------------------------------------------------------------------------------------------------------- */
