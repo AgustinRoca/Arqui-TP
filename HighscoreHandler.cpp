@@ -6,7 +6,7 @@
 HighscoreHandler::HighscoreHandler(){
 }
 
-void HighscoreHandler::initialize(uint32_t startingAddress,uint32_t maxScores){
+HighscoreHandler::HighscoreHandler(uint32_t startingAddress,uint32_t maxScores){
   this->startingAddress = startingAddress;
   this->maxScores = maxScores;
   currentLoadedScores = 0;
@@ -88,7 +88,6 @@ void HighscoreHandler::initializeScores(){
       aux |= EEPROM.read(startingAddress + j);
       aux <<= BYTE_SIZE;
   }
-  
   aux |= EEPROM.read(startingAddress + (sizeof(aux) - 1));
   currentLoadedScores = aux;
 
