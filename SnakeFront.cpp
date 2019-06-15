@@ -1,6 +1,7 @@
 #include "SnakeFront.h"
 
 #define OFF 0
+#define LINE_SEPARATOR "---"
 
 // ----- PRIVATE
 /* Traduce la posicion pos a pixeles de la screen y la imprime con intensidad intensity,si se le manda una posicion valida la ignora */
@@ -59,13 +60,14 @@ void SnakeFront::printHighscores() {
   
   if (highscoreHandler->getScoresAmmount() > 0) {
     lcd->print("Puntajes maximos: ");
-    for(int i=0; i < highscoreHandler->getScoresAmmount(); i++){
+    for(uint32_t i=0; i < highscoreHandler->getScoresAmmount(); i++){
       Serial.print(i + 1, DEC);
       Serial.print(". ");
       Serial.println((long) highscoreHandler->getScores()[i], DEC);
       
       if (i + 1 < lcdRows) {
         lcd->setCursor(0, i + 1);
+        // Long long!!!!!
         lcd->print((uint32_t) highscoreHandler->getScores()[i]);
       }
     }
@@ -75,7 +77,7 @@ void SnakeFront::printHighscores() {
     Serial.println("No hay puntajes registrados");
   }
   
-  Serial.println("--------------------------------------------");
+  Serial.println(LINE_SEPARATOR);
 }
 
 void SnakeFront::setMatrixIntensity(uint8_t _matrixIntensity) {
@@ -98,7 +100,7 @@ void SnakeFront::setDotInScreen(Position pos) {
 
 /* Prende todo el array de body en las matrices (asume que la pantalla esta limpia antes) */
 void SnakeFront::printWholeBody() {
-  for(uint16_t i = 0; i < snake->getCurrentLength(); i++){
+  for(uint32_t i = 0; i < snake->getCurrentLength(); i++){
     setDotInScreen(snake->getBody()[(snakeMaxLength + snake->getHead() - i) % snakeMaxLength], matrixIntensity);
   }
 }
@@ -116,11 +118,11 @@ void SnakeFront::printSkull() { //TODO: ACTUALIZAR PARA 4 MATRICES
   byte skull3[8]= {B00000000,B00010000,B00110000,B00000111,B00001111,B00001111,B00011100,B00011000}; //Parte que deberia ir en la 3era matriz arriba-izquierda
   byte skull4[8]= {B00110001,B00111001,B00011111,B00011111,B00001111,B01100000,B00100000,B00000000}; //Parte que deberia ir en la 4ta matriz arriba-derecha
   
-  for(int i=0; i<8; i++){
+  for(uint8_t i=0; i<8; i++){
     screen->setColumn(i+2*matrixCols, skull3[i]);
     screen->setColumn(i, skull1[i]);
   }
-  for(int i=0; i<8; i++){
+  for(uint8_t i=0; i<8; i++){
     screen->setColumn(i+3*matrixCols, skull4[i]);
     screen->setColumn(i+matrixCols, skull2[i]);
   }
@@ -129,14 +131,16 @@ void SnakeFront::printSkull() { //TODO: ACTUALIZAR PARA 4 MATRICES
 
 /* SE CAMBIA CUANDO HAYA LCD */
 void SnakeFront::printMenu(){
-  Serial.println("\nSNAKE\n");
+  Serial.print('\n');
+  Serial.print("SNK");
+  Serial.print('\n');
   Serial.println("1.P");
   Serial.println("2.ShowHighss");
   Serial.println("3.ResHighss");
-  Serial.println("4x.Intensity in x(x=(1..8))"); //Ejemplo: 41 = set Intensity in 1
-  Serial.println("5x.Dif in x(x=1,2,3)"); //Ejemplo: 53 = set Dificulty in 3
-  Serial.println("6x.Contrast in x(x=(1..8))"); //Ejemplo: 61 = set Contrast in 1
-  Serial.println("---");
+  Serial.println("4x.Inten in x(x=(1-8))"); //Ejemplo: 41 = set Intensity in 1
+  Serial.println("5x.Dif in x(x=1-3)"); //Ejemplo: 53 = set Dificulty in 3
+  Serial.println("6x.Contr in x(x=(1-8))"); //Ejemplo: 61 = set Contrast in 1
+  Serial.println(LINE_SEPARATOR);
   lcd->clear();
   lcd->print("M");
 }

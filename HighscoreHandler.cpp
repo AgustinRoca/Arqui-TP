@@ -71,11 +71,8 @@ void HighscoreHandler::freeScores(){
 /* AUXILIAR: Escribe una variable de 64 bits en la ROM, supone que hay 64 bits libres desde la posicion address */
 void HighscoreHandler::writeInEEPROM(uint64_t address, uint64_t data){
   uint64_t byteToWrite = 0;
-  for(int j=sizeof(data)-1; j>=0; j--){
+  for(uint8_t j=sizeof(data)-1; j>=0; j--){
     byteToWrite = data & 0xFF; //Agarro el byte menos significativo
-    //Serial.print("Writing in ROM: ");
-    //Serial.println((long) byteToWrite, DEC);
-
     EEPROM.write(address + j, byteToWrite); //Lo meto en la posicion del final reservada para ese numero
     data >>= BYTE_SIZE; //Me voy al proximo byte
   }
@@ -91,7 +88,7 @@ int8_t HighscoreHandler::descendingCompareFunction(const void *a, const void *b)
 void HighscoreHandler::initializeScores(){
   // En los primeros 8 bytes se guarda la cantidad de scores que se guardaron en EEPROM
   uint64_t aux = 0;
-  for(int j=0; j<sizeof(aux) - 1; j++){
+  for(uint8_t j=0; j<sizeof(aux) - 1; j++){
       aux |= EEPROM.read(startingAddress + j);
       aux <<= BYTE_SIZE;
   }
@@ -99,9 +96,9 @@ void HighscoreHandler::initializeScores(){
   currentLoadedScores = aux;
 
   // Carga de los scores
-  for(int i=0; i<currentLoadedScores; i++){ 
+  for(uint32_t i=0; i<currentLoadedScores; i++){ 
     aux = 0;
-    for(int j=0; j<sizeof(aux) - 1; j++){
+    for(uint8_t j=0; j<sizeof(aux) - 1; j++){
       aux |= EEPROM.read(startingAddress + (i+1)*sizeof(*scores) + j);//Corro 1 porque la primera posicion es la cantidad de scores en la ROM
       aux <<= BYTE_SIZE;
     }
@@ -112,7 +109,8 @@ void HighscoreHandler::initializeScores(){
 
 /* AUXILIAR: Devuelve la posicion dentro del array de RAM que deberia estar este score */
 uint32_t HighscoreHandler::rankScore(uint64_t score){
-  for(uint32_t i=currentLoadedScores - 1; i>=0; i--){
+  // 8B por si currentLoadedScores es 0
+  for(int64_t i=currentLoadedScores - 1; i>=0; i--){
     if(scores[i] > score){
       return i+1;
     }
