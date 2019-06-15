@@ -100,6 +100,8 @@ Direction translateInput(Direction currentDir, HighscoreHandler * highscore, Inp
 /* Lee la opcion del menu que se selecciono, y se ejecuta, si se le manda solo 4 o solo 5 se rompe (igual esto cambia cuando haya botones) */
 void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * screen,int * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor){
   if(Serial.available()){
+    uint8_t dificulty, contrast;
+    
     char c = Serial.read(); //Deberiamos agregar un while(Serial.available()) para que lea todo el buffer por si se insertaron mas de una letra? Nos quedamos con la primera o la ultima?
     switch(toupper(c)){
       case '1': // Play
@@ -123,13 +125,13 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
         break;
       case '5': // Dificulty
         *waitDecreaseRatioFactor = *waitTimeFactor = 1;
-        int dificulty = Serial.read() - '0' - 1;
+        dificulty = Serial.read() - '0' - 1;
         for(int i=0; i<dificulty; i++){
           *waitDecreaseRatioFactor = (*waitTimeFactor -= DIFICULTY_INTERVAL);
         }
       break;
       case '6': // Set contrast
-        uint8_t contrast = Serial.read() - '0';
+        contrast = Serial.read() - '0';
         Serial.println(contrast);
         snakeFront.setLCDContrast(0);
         break;
