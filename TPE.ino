@@ -65,11 +65,9 @@ void cleanSerial(){
   }
 }
 
-SnakeFront snakeFront;
-
 /* SE CAMBIA CUANDO HAYA BOTONES */
 /* Traduce el boton apretado y devuelve la direccion en la que deberia seguir la vibora en base a ese boton, si no hubo boton apretado, sigue en la misma direccion que estaba */
-Direction translateInput(Direction currentDir, HighscoreHandler * highscore, int * intensity){
+Direction translateInput(SnakeFront *snakeFront, Direction currentDir, HighscoreHandler * highscore, int * intensity){
   if(Serial.available()){
     char c = Serial.read(); //Deberiamos agregar un while(Serial.available()) para que lea todo el buffer por si se insertaron mas de una letra? Nos quedamos con la primera o la ultima?
     cleanSerial();
@@ -79,14 +77,14 @@ Direction translateInput(Direction currentDir, HighscoreHandler * highscore, int
       case 'D': // Flecha derecha
         return currentDir = (Direction) ((currentDir + 1) % 4);  // Giro en sentido horario
       case 'P': // 'P'rint
-        snakeFront.printHighscores();
+        snakeFront->printHighscores();
         return currentDir;
       case 'R': // 'R'eset
         highscore->resetScores();
         return currentDir;
       case 'I':
         *intensity = Serial.read() - '0';
-        snakeFront.setMatrixIntensity(*intensity);
+        snakeFront->setMatrixIntensity(*intensity);
         return currentDir;
       default:
         return currentDir;
@@ -98,7 +96,7 @@ Direction translateInput(Direction currentDir, HighscoreHandler * highscore, int
 
 /* SE CAMBIA CUANDO HAYA BOTONES */
 /* Lee la opcion del menu que se selecciono, y se ejecuta, si se le manda solo 4 o solo 5 se rompe (igual esto cambia cuando haya botones) */
-void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * screen,int * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor){
+void readMenuInput(SnakeFront *snakeFront, Snake * snake, HighscoreHandler * highscore,  MaxMatrix * screen,int * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor){
   if(Serial.available()){
     uint8_t dificulty, contrast;
     
@@ -107,12 +105,12 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
       case '1': // Play
         snake->revive(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
         screen->clear();
-        snakeFront.printWholeBody();
+        snakeFront->printWholeBody();
         *lastUpdatedMillis = *lastMovedMillis = millis();
         *input = INIT_DIR;
       break;
       case '2': // Show Highscores
-        snakeFront.printHighscores();
+        snakeFront->printHighscores();
       break;
       case '3': // Reset Highscores
         highscore->resetScores();
@@ -121,8 +119,8 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
         Serial.print(c, HEX);
         c = Serial.read();
         *intensity = c - '0';
-        snakeFront.setMatrixIntensity(*intensity);
-        snakeFront.setLCDIntensity(*intensity);
+        snakeFront->setMatrixIntensity(*intensity);
+        snakeFront->setLCDIntensity(*intensity);
         Serial.println(*intensity);
         Serial.print(c, HEX);
         break;
@@ -136,29 +134,40 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
       case '6': // Set contrast
         contrast = Serial.read() - '0';
         Serial.println(contrast);
-        snakeFront.setLCDContrast(0);
+        snakeFront->setLCDContrast(0);
         break;
     }
     cleanSerial();
   }
 }
 
-/* Creacion de variables globales */
-Snake snake(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS, HORIZONTAL_MATRIXES_QTY * MATRIX_COLUMNS, VERTICAL_MATRIXES_QTY * MATRIX_ROWS); // La parte logica de la viborita
-MaxMatrix screen(MATRIX_DATA_PIN,MATRIX_CS_PIN,MATRIC_CLK_PIN,1);  //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
-Direction input = INIT_DIR; // La direccion que empieza la vibora (lo inicializo en eso porque si no hay boton devuelve eso)
-uint64_t lastMovedMillis = 0; // El tiempo (en ms) en el que se movio la vibora la ultima vez
-uint64_t lastUpdatedMillis = 0; // El tiempo (en ms) en los que se agrando la vibora la ultima vez
-bool enlarge = false; // True si hay que agrandar la vibora en el siguiente turno
-HighscoreHandler highscore;
-InputHandler inputHandler;
-int intensity = ON;
-double waitTimeFactor = 1;
-double waitDecreaseRatioFactor = 1;
-
-LCD lcd(LCD_RS_PIN, LCD_ENABLE_PIN, LCD_D0_PIN, LCD_D1_PIN, LCD_D2_PIN, LCD_D3_PIN);
 
 void setup() {
+  #ifdef __DEBUG__
+  Serial.begin(115200);
+  #endif
+
+  SnakeFront snakeFront;
+
+  /* Creacion de variables globales */
+  Snake snake(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS, HORIZONTAL_MATRIXES_QTY * MATRIX_COLUMNS, VERTICAL_MATRIXES_QTY * MATRIX_ROWS); // La parte logica de la viborita
+  MaxMatrix screen(MATRIX_DATA_PIN,MATRIX_CS_PIN,MATRIC_CLK_PIN,1);  //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
+  Direction input = INIT_DIR; // La direccion que empieza la vibora (lo inicializo en eso porque si no hay boton devuelve eso)
+  uint64_t lastMovedMillis = 0; // El tiempo (en ms) en el que se movio la vibora la ultima vez
+  uint64_t lastUpdatedMillis = 0; // El tiempo (en ms) en los que se agrando la vibora la ultima vez
+  bool enlarge = false; // True si hay que agrandar la vibora en el siguiente turno
+  HighscoreHandler highscore;
+  InputHandler inputHandler;
+  int intensity = ON;
+  double waitTimeFactor = 1;
+  double waitDecreaseRatioFactor = 1;
+
+  LCD lcd(LCD_RS_PIN, LCD_ENABLE_PIN, LCD_D0_PIN, LCD_D1_PIN, LCD_D2_PIN, LCD_D3_PIN);
+
+
+
+
+
   // Inicializacion de botones
   // Los botones son Active Low ya que, si bien estan conectados
   // con una resistencia en formato PullDown, el Schmitt Trigger
@@ -182,10 +191,6 @@ void setup() {
 
   lcd.setContrast(50);
   lcd.setBrightness(255);
-  
-  #ifdef __DEBUG__
-  Serial.begin(115200);
-  #endif
 
   // Inicializacion de las matrices de LEDs
   screen.init();
@@ -201,47 +206,44 @@ void setup() {
   // Se imprime el menu
   //snakeFront.printMenu();
 
-  Serial.print((uint32_t) &lcd, DEC);
-  Serial.println();
-  Serial.print((uint32_t) snake.getBody() + 256 * sizeof(Position), DEC);
-  
-  Serial.println();
+  while (1) {
+    if(snake.isAlive()){
+        if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
+          snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO * waitDecreaseRatioFactor);
+          enlarge = true;
+
+          lastUpdatedMillis = millis();
+        }
+      
+        // Si hubo tecla, devuelve la direccion en la que deberia ir la vibora ahora
+        input = translateInput(&snakeFront, input, &highscore, &intensity);
+        
+        if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
+          Position oldTail = snake.getBody()[(MAX_LENGTH + snake.getHead() - (snake.getCurrentLength() - 1) ) % MAX_LENGTH]; // Guardo la cola de la vibora para apagar despues (La guardo por si estamos en el caso limite en que el head pise a la cola en el array de body)
+          snake.moveSnake(input, enlarge);
+          enlarge = false; // Si lo agrandaba, ya no lo tengo que agrandar
+        
+          if(snake.isAlive()){ // Si sigue viva despues de ese movimiento
+            snakeFront.printMove(snake.getBody()[snake.getHead()], oldTail); // Actualizo la pantalla 
+          }
+          else{
+            snakeFront.printSkull(); // Imprimo la pantalla de GAME OVER
+            snake.freeSnake(); // Libera solo el body, no es un destructor
+            highscore.registerScore(snake.getAliveTime()); // Si fue un highscore, lo guarda
+            delay(1000); // Para que se vea la pantalla de GAME OVER
+            snakeFront.printMenu();
+          }
+
+          Serial.println("Alvie");
+          lastMovedMillis = millis();
+        }
+      }
+      else{
+        readMenuInput(&snakeFront, &snake, &highscore, &screen, &intensity, &lastUpdatedMillis, &lastMovedMillis, &input, &waitTimeFactor, &waitDecreaseRatioFactor);
+    }
+  }
 }
 
 void loop() {
-  if(snake.isAlive()){
-    if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
-      snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO * waitDecreaseRatioFactor);
-      enlarge = true;
 
-      lastUpdatedMillis = millis();
-    }
-  
-    // Si hubo tecla, devuelve la direccion en la que deberia ir la vibora ahora
-    input = translateInput(input, &highscore, &intensity);
-    
-    if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
-      Position oldTail = snake.getBody()[(MAX_LENGTH + snake.getHead() - (snake.getCurrentLength() - 1) ) % MAX_LENGTH]; // Guardo la cola de la vibora para apagar despues (La guardo por si estamos en el caso limite en que el head pise a la cola en el array de body)
-      snake.moveSnake(input, enlarge);
-      enlarge = false; // Si lo agrandaba, ya no lo tengo que agrandar
-    
-      if(snake.isAlive()){ // Si sigue viva despues de ese movimiento
-        snakeFront.printMove(snake.getBody()[snake.getHead()], oldTail); // Actualizo la pantalla 
-      }
-      else{
-        snakeFront.printSkull(); // Imprimo la pantalla de GAME OVER
-        snake.freeSnake(); // Libera solo el body, no es un destructor
-        highscore.registerScore(snake.getAliveTime()); // Si fue un highscore, lo guarda
-        delay(1000); // Para que se vea la pantalla de GAME OVER
-        snakeFront.printMenu();
-      }
-
-      Serial.println("Alvie");
-      lastMovedMillis = millis();
-    }
-  }
-  else{
-    readMenuInput(&snake, &highscore, &screen, &intensity, &lastUpdatedMillis, &lastMovedMillis, &input, &waitTimeFactor, &waitDecreaseRatioFactor);
-  }
 }
-  
