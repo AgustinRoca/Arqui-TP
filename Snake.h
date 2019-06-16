@@ -4,6 +4,7 @@
 #include "Arduino.h"
 #include "Direction.h"
 #include "Position.h"
+#include <EEPROM.h>
 
 class Snake {
   private:

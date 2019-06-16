@@ -6,6 +6,7 @@
 HighscoreHandler::HighscoreHandler(){
 }
 
+/* Inicializador */
 void HighscoreHandler::initialize(uint32_t startingAddress,uint32_t maxScores){
   this->startingAddress = startingAddress;
   this->maxScores = maxScores;
@@ -30,23 +31,19 @@ void HighscoreHandler::registerScore(uint64_t score){
     if(scoreRanking <= maxScores){ // Si verdaderamente lo tengo que almacenar
       
       // Lo escribo en RAM para que quede ordenado
-      if (currentLoadedScores < maxScores) {
-        scores[currentLoadedScores + 1] = scores[currentLoadedScores];
-      }
-
-      for(int64_t i=(int64_t)currentLoadedScores-2; i>=scoreRanking; i--){ // Muevo todo el array para dejar espacio al nuevo
+      for(int64_t i=(int64_t)currentLoadedScores-1; i>=scoreRanking; i--){ // Muevo todo el array para dejar espacio al nuevo
         scores[i+1] = scores[i];
       }
       scores[scoreRanking] = score; // Guardo el score en el lugar reservado para el
-      if(currentLoadedScores < maxScores) { // Si tengo mas elementos que antes
+      if(currentLoadedScores < maxScores) // Si tengo mas elementos que antes
         currentLoadedScores++; 
-        writeInEEPROM(startingAddress, currentLoadedScores);
-      }
 
       // Lo escribo en EEPROM ordenado, aprovechando que ya lo ordene en RAM
       for(int64_t i=currentLoadedScores-1; i>=scoreRanking; i--){ // Sobreescribo solamente los valores cambiados
         writeInEEPROM(startingAddress + (i+1)*sizeof(*scores), scores[i]); // Corro uno en la EEPROM por el valor de la cantidad de scores ( i+1 porque en la posicion 0 esta la cantidad de scores almacenados )
+        writeInEEPROM(startingAddress, currentLoadedScores);
       }
+
     }
 }
 
@@ -58,10 +55,7 @@ void HighscoreHandler::resetScores(){
 
 /* Libera el espacio reservado en heap para el arreglo de scores */
 void HighscoreHandler::freeScores(){
-  if (scores != NULL) {
-    free(scores);
-    scores = NULL;
-  }
+  free(scores);
 }
 
 /* ------------------------------------------------------------------------------------------------------------- */
@@ -71,8 +65,11 @@ void HighscoreHandler::freeScores(){
 /* AUXILIAR: Escribe una variable de 64 bits en la ROM, supone que hay 64 bits libres desde la posicion address */
 void HighscoreHandler::writeInEEPROM(uint64_t address, uint64_t data){
   uint64_t byteToWrite = 0;
-  for(uint8_t j=sizeof(data)-1; j>=0; j--){
+  for(int j=sizeof(data)-1; j>=0; j--){
     byteToWrite = data & 0xFF; //Agarro el byte menos significativo
+    //Serial.print("Writing in ROM: ");
+    //Serial.println((long) byteToWrite, DEC);
+
     EEPROM.write(address + j, byteToWrite); //Lo meto en la posicion del final reservada para ese numero
     data >>= BYTE_SIZE; //Me voy al proximo byte
   }
@@ -88,7 +85,7 @@ int8_t HighscoreHandler::descendingCompareFunction(const void *a, const void *b)
 void HighscoreHandler::initializeScores(){
   // En los primeros 8 bytes se guarda la cantidad de scores que se guardaron en EEPROM
   uint64_t aux = 0;
-  for(uint8_t j=0; j<sizeof(aux) - 1; j++){
+  for(int j=0; j<sizeof(aux) - 1; j++){
       aux |= EEPROM.read(startingAddress + j);
       aux <<= BYTE_SIZE;
   }
@@ -96,9 +93,9 @@ void HighscoreHandler::initializeScores(){
   currentLoadedScores = aux;
 
   // Carga de los scores
-  for(uint32_t i=0; i<currentLoadedScores; i++){ 
+  for(int i=0; i<currentLoadedScores; i++){ 
     aux = 0;
-    for(uint8_t j=0; j<sizeof(aux) - 1; j++){
+    for(int j=0; j<sizeof(aux) - 1; j++){
       aux |= EEPROM.read(startingAddress + (i+1)*sizeof(*scores) + j);//Corro 1 porque la primera posicion es la cantidad de scores en la ROM
       aux <<= BYTE_SIZE;
     }
@@ -109,8 +106,7 @@ void HighscoreHandler::initializeScores(){
 
 /* AUXILIAR: Devuelve la posicion dentro del array de RAM que deberia estar este score */
 uint32_t HighscoreHandler::rankScore(uint64_t score){
-  // 8B por si currentLoadedScores es 0
-  for(int64_t i=currentLoadedScores - 1; i>=0; i--){
+  for(uint32_t i=currentLoadedScores - 1; i>=0; i--){
     if(scores[i] > score){
       return i+1;
     }

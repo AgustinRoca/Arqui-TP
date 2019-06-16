@@ -19,12 +19,11 @@ void InputHandler::registerPin(uint8_t pin, uint8_t activeType, bool internalPul
   
   count++;
   if (count == currentLenght) {
-    activeTypes = (uint8_t*) realloc(activeTypes, sizeof(*activeTypes) * (CHUNK + currentLenght));
-    activePins = (uint8_t*) realloc(activePins, sizeof(*activePins) * (CHUNK + currentLenght));
-    pins = (uint8_t*) realloc(pins, sizeof(*pins) * (CHUNK + currentLenght));
-    currentLenght += CHUNK;
+    activeTypes = (uint8_t*) realloc(activeTypes, sizeof(*activeTypes) * (CHUNK + count));
+    activePins = (uint8_t*) realloc(activePins, sizeof(*activePins) * (CHUNK + count));
+    pins = (uint8_t*) realloc(pins, sizeof(*pins) * (CHUNK + count));
+    currentLenght = CHUNK + count;
   }
-  
   activeTypes[count - 1] = activeType;
   pins[count - 1] = pin;
 }
@@ -37,11 +36,11 @@ uint8_t InputHandler::getActivePinsCount() {
   return activePinsCount;
 }
 
-const uint8_t* InputHandler::readInputs() {
+const uint8_t * InputHandler::readInputs() {
   activePinsCount = 0;
   
   for (uint8_t ix = 0; ix < count; ix++) {
-    if (digitalRead(pins[ix]) == activeTypes[ix]) {
+    if(digitalRead(pins[ix]) == activeTypes[ix]){
       activePins[activePinsCount++] = pins[ix];
     }
   }

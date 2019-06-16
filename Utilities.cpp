@@ -18,16 +18,10 @@ void swap(void* a, void* b, uint8_t elementSize) {
   uint8_t* pointerA = (uint8_t*) a;
   uint8_t* pointerB = (uint8_t*) b;
   
-  for (uint32_t i = 0; i < elementSize; i++) {
+  for (uint8_t i = 0; i < elementSize; i++) {
     aux = pointerA[i];
     
     pointerA[i] = pointerB[i];
     pointerB[i] = aux;
   }
-}
-
-uint32_t millis2() {
-  static uint32_t time = 1;
-  time += 500;
-  return time;
 }

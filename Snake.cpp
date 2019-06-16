@@ -1,7 +1,5 @@
 #include "Snake.h"
 
-#include "Utilities.h"
-
 // TODO: Chequear constraints iniciales
 Snake::Snake(uint16_t initialLength, Direction initialDirection, uint64_t initialSpeed, uint16_t initialRow, uint16_t initialColumn, uint16_t _columns, uint16_t _rows) {
   currentDirection = initialDirection;
@@ -10,7 +8,6 @@ Snake::Snake(uint16_t initialLength, Direction initialDirection, uint64_t initia
   alive = false;
   columns = _columns;
   rows = _rows;
-  startTime = millis2();
   
   body = (Position *)malloc(rows * columns * sizeof(*body));
   // TODO: Corregir esto para soportar diferentes initial directions HABRIA QUE HACER UN SWITCH
@@ -37,7 +34,7 @@ uint64_t Snake::getCurrentSpeed() {
 }
 
 uint64_t Snake::getAliveTime() {
-  return alive ? stopTime - startTime : millis2() - startTime;
+  return alive ? stopTime - startTime : millis() - startTime;
 }
 
 Position* Snake::getBody() {
@@ -62,8 +59,6 @@ void Snake::revive(uint16_t initialLength, Direction initialDirection, uint64_t 
   currentDirection = initialDirection;
   currentLength = initialLength;
   currentSpeed = initialSpeed;
-  freeSnake();
-  
   body = (Position *)malloc(rows * columns * sizeof(*body));
   for(uint16_t i=0; i < initialLength; i++){
     body[i].y = initialRow;
@@ -72,7 +67,7 @@ void Snake::revive(uint16_t initialLength, Direction initialDirection, uint64_t 
   
   head = currentLength - 1;
   alive = true;
-  startTime = millis2();
+  startTime = millis();
 }
 
 bool Snake::moveSnake(Direction newDirection, bool enlarge) {
@@ -80,7 +75,7 @@ bool Snake::moveSnake(Direction newDirection, bool enlarge) {
     return false;
   }
 
-  uint64_t possibleStopTime = millis2();  // Don't account for time spent on routine
+  uint64_t possibleStopTime = millis();  // Don't account for time spent on routine
   
   switch(newDirection){ // CREO QUE SE PUEDE SACAR LOS IFS, casi seguro
     case UP:
@@ -151,8 +146,5 @@ bool Snake::moveSnake(Direction newDirection, bool enlarge) {
 }
 
 void Snake::freeSnake(){
-  if (body != NULL) {
-    free(body);
-    body = NULL;
-  }
+  free(body);
 }

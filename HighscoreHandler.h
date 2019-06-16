@@ -28,9 +28,8 @@ class HighscoreHandler {
     void initializeScores();
     
   public:
-    /* Constructor */
+    /* Constructores */
     HighscoreHandler();
-
     void initialize(uint32_t startingAddress,uint32_t maxScores);
 
     /* Getters */
