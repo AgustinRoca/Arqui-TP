@@ -1,5 +1,7 @@
 #include "LCD.h"
 
+#include "Utilities.h"
+
 #define DEFAULT_TIMEOUT  500
 #define BLANK ' '
 
@@ -143,7 +145,7 @@ void LCD::printScrollableText() {
 }
 
 void LCD::refresh() {
-  if ((!finished || (finished && continuous && textLenght > cols - startingCol)) && millis() - lastPrinted > timeout) {
+  if ((!finished || (finished && continuous && textLenght > cols - startingCol)) && millis2() - lastPrinted > timeout) {
     if (current == NULL || *current == '\0') {
       finished = true;
       if (continuous) {
@@ -152,7 +154,7 @@ void LCD::refresh() {
         clearLine();
         printInitialText();
         this->setCursor(cols - 1, line);
-        lastPrinted = millis();
+        lastPrinted = millis2();
       }
     } else {
       uint8_t cursor = current - text < cols ? cols - (current - text) - 1 : 0;
@@ -164,7 +166,7 @@ void LCD::refresh() {
       }
       
       this->print(*(current++));
-      lastPrinted = millis();
+      lastPrinted = millis2();
     }
   }
 }

@@ -25,3 +25,9 @@ void swap(void* a, void* b, uint8_t elementSize) {
     pointerB[i] = aux;
   }
 }
+
+uint32_t millis2() {
+  static uint32_t time = 1;
+  time += 500;
+  return time;
+}

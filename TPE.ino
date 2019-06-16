@@ -106,7 +106,7 @@ void readMenuInput(SnakeFront *snakeFront, Snake * snake, HighscoreHandler * hig
         snake->revive(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
         screen->clear();
         snakeFront->printWholeBody();
-        *lastUpdatedMillis = *lastMovedMillis = millis();
+        *lastUpdatedMillis = *lastMovedMillis = millis2();
         *input = INIT_DIR;
       break;
       case '2': // Show Highscores
@@ -147,23 +147,34 @@ void setup() {
   Serial.begin(115200);
   #endif
 
+  Serial.println("PRE");
   SnakeFront snakeFront;
 
+  Serial.println("snakeFront");
   /* Creacion de variables globales */
   Snake snake(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS, HORIZONTAL_MATRIXES_QTY * MATRIX_COLUMNS, VERTICAL_MATRIXES_QTY * MATRIX_ROWS); // La parte logica de la viborita
+
+  Serial.println("snake");
   MaxMatrix screen(MATRIX_DATA_PIN,MATRIX_CS_PIN,MATRIC_CLK_PIN,1);  //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
+
+  Serial.println("PscreenRE");
   Direction input = INIT_DIR; // La direccion que empieza la vibora (lo inicializo en eso porque si no hay boton devuelve eso)
   uint64_t lastMovedMillis = 0; // El tiempo (en ms) en el que se movio la vibora la ultima vez
   uint64_t lastUpdatedMillis = 0; // El tiempo (en ms) en los que se agrando la vibora la ultima vez
   bool enlarge = false; // True si hay que agrandar la vibora en el siguiente turno
   HighscoreHandler highscore;
+  
+  Serial.println("highscore");
   InputHandler inputHandler;
+  
+  Serial.println("inputHandler");
   int intensity = ON;
   double waitTimeFactor = 1;
   double waitDecreaseRatioFactor = 1;
 
   LCD lcd(LCD_RS_PIN, LCD_ENABLE_PIN, LCD_D0_PIN, LCD_D1_PIN, LCD_D2_PIN, LCD_D3_PIN);
 
+  Serial.println("LCD");
 
 
 
@@ -208,17 +219,17 @@ void setup() {
 
   while (1) {
     if(snake.isAlive()){
-        if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
+        if(millis2() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
           snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO * waitDecreaseRatioFactor);
           enlarge = true;
 
-          lastUpdatedMillis = millis();
+          lastUpdatedMillis = millis2();
         }
       
         // Si hubo tecla, devuelve la direccion en la que deberia ir la vibora ahora
         input = translateInput(&snakeFront, input, &highscore, &intensity);
         
-        if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
+        if(millis2() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
           Position oldTail = snake.getBody()[(MAX_LENGTH + snake.getHead() - (snake.getCurrentLength() - 1) ) % MAX_LENGTH]; // Guardo la cola de la vibora para apagar despues (La guardo por si estamos en el caso limite en que el head pise a la cola en el array de body)
           snake.moveSnake(input, enlarge);
           enlarge = false; // Si lo agrandaba, ya no lo tengo que agrandar
@@ -235,7 +246,7 @@ void setup() {
           }
 
           Serial.println("Alvie");
-          lastMovedMillis = millis();
+          lastMovedMillis = millis2();
         }
       }
       else{
