@@ -81,16 +81,20 @@ void SnakeFront::printHighscores() {
 }
 
 void SnakeFront::setMatrixIntensity(uint8_t _matrixIntensity) {
-  screen->setIntensity(_matrixIntensity);
+  if (screen != NULL) 
+    screen->setIntensity(_matrixIntensity);
+
   matrixIntensity = _matrixIntensity;
 }
 
 void SnakeFront::setLCDIntensity(uint8_t lcdIntensity) {
-  lcd->setBrightness(lcdIntensity);
+  if (lcd != NULL) 
+    lcd->setBrightness(lcdIntensity);
 }
 
 void SnakeFront::setLCDContrast(uint8_t contrast) {
-  lcd->setContrast(contrast);
+  if (lcd != NULL) 
+    lcd->setBrightness(contrast);
 }
 
 /* Traduce la posicion pos a pixeles de la screen y la imprime con intensidad intensity,si se le manda una posicion valida la ignora */

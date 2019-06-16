@@ -2,11 +2,11 @@
 
 #define BYTE_SIZE 8
 
-/* Constructores */
+/* Constructor */
 HighscoreHandler::HighscoreHandler(){
 }
 
-HighscoreHandler::HighscoreHandler(uint32_t startingAddress,uint32_t maxScores){
+void HighscoreHandler::initialize(uint32_t startingAddress,uint32_t maxScores){
   this->startingAddress = startingAddress;
   this->maxScores = maxScores;
   currentLoadedScores = 0;

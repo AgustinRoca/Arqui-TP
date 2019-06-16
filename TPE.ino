@@ -69,7 +69,7 @@ SnakeFront snakeFront;
 
 /* SE CAMBIA CUANDO HAYA BOTONES */
 /* Traduce el boton apretado y devuelve la direccion en la que deberia seguir la vibora en base a ese boton, si no hubo boton apretado, sigue en la misma direccion que estaba */
-Direction translateInput(Direction currentDir, HighscoreHandler * highscore, InputHandler input, MaxMatrix screen, int * intensity){
+Direction translateInput(Direction currentDir, HighscoreHandler * highscore, int * intensity){
   if(Serial.available()){
     char c = Serial.read(); //Deberiamos agregar un while(Serial.available()) para que lea todo el buffer por si se insertaron mas de una letra? Nos quedamos con la primera o la ultima?
     cleanSerial();
@@ -118,10 +118,13 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
         highscore->resetScores();
         break;
       case '4': // Set intensity
-        *intensity = Serial.read() - '0';
+        Serial.print(c, HEX);
+        c = Serial.read();
+        *intensity = c - '0';
         snakeFront.setMatrixIntensity(*intensity);
         snakeFront.setLCDIntensity(*intensity);
         Serial.println(*intensity);
+        Serial.print(c, HEX);
         break;
       case '5': // Dificulty
         *waitDecreaseRatioFactor = *waitTimeFactor = 1;
@@ -137,9 +140,6 @@ void readMenuInput(Snake * snake, HighscoreHandler * highscore,  MaxMatrix * scr
         break;
     }
     cleanSerial();
-    if(toupper(c) != '1' && c!='\r'){
-      snakeFront.printMenu();
-    }
   }
 }
 
@@ -192,14 +192,20 @@ void setup() {
   screen.clear();
 
   // Inicializacion del manejador de puntajes maximos
-  highscore = HighscoreHandler(INITIAL_EEPROM_ADDRESS, MAX_HIGHSCORES);
+  highscore.initialize(INITIAL_EEPROM_ADDRESS, MAX_HIGHSCORES);
   
   // Inicializacion FrontEnd
   snakeFront.initialize(&highscore, &lcd, &screen, &snake, MATRIX_ROWS, MATRIX_ROWS, LCD_ROWS, LCD_COLS, MAX_LENGTH);
   snakeFront.setMatrixIntensity(intensity);
   
   // Se imprime el menu
-  snakeFront.printMenu();
+  //snakeFront.printMenu();
+
+  Serial.print((uint32_t) &lcd, DEC);
+  Serial.println();
+  Serial.print((uint32_t) snake.getBody() + 256 * sizeof(Position), DEC);
+  
+  Serial.println();
 }
 
 void loop() {
@@ -212,7 +218,7 @@ void loop() {
     }
   
     // Si hubo tecla, devuelve la direccion en la que deberia ir la vibora ahora
-    input = translateInput(input, &highscore, inputHandler, screen, &intensity);
+    input = translateInput(input, &highscore, &intensity);
     
     if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
       Position oldTail = snake.getBody()[(MAX_LENGTH + snake.getHead() - (snake.getCurrentLength() - 1) ) % MAX_LENGTH]; // Guardo la cola de la vibora para apagar despues (La guardo por si estamos en el caso limite en que el head pise a la cola en el array de body)

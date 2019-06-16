@@ -27,12 +27,13 @@ void LCD::clearLine() {
 }
 
 void LCD::printInitialText() {
-  uint8_t cursor = startingCol;
-  
-  this->setCursor(cursor, line);
-  while (cursor < cols && *current != '\0') {
-    this->print(*(current++));
-    cursor++;
+  if (current != NULL) {
+    uint8_t cursor = startingCol;
+    this->setCursor(cursor, line);
+    while (cursor < cols && *current != '\0') {
+      this->print(*(current++));
+      cursor++;
+    }
   }
 }
 
