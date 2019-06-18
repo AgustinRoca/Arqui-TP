@@ -1,12 +1,7 @@
 #include "LCD.h"
 
-#define DEFAULT_TIMEOUT  500
-#define UPDATE_BRIGHTNESS_EVERY_MILLIS 10
-#define UPDATE_CONTRAST_EVERY_MILLIS 10
+ #define DEFAULT_TIMEOUT  500
 #define BLANK ' '
-
-#define NEGATIVE 0
-#define POSITIVE 1
 
  void LCD::initializeVariables() {
   timeout = DEFAULT_TIMEOUT;
@@ -16,25 +11,11 @@
   rows = 0;
   cols = 0;
   line = 0;
-  
-  fadingBrightnessOperation = POSITIVE;
-  fadingContrastOperation = POSITIVE;
-  lastBrightnessMillis = 0;
-  lastContrastMillis = 0;
-  currentBrightness = 0;
-  targetBrightness = 0;
-  currentContrast = 0;
-  targetContrast = 0;
-  brightnessPin = -1;
-  contrastPin = -1;
 
-  fadingBrightness = false;
-  fadingContrast = false;
-  printingText = false;
-  continuous = false;
+   continuous = false;
   finished = true;
 
-  current = NULL;
+   current = NULL;
   text = NULL;
 }
 
@@ -130,10 +111,8 @@
 }
 
  void LCD::setBrightness(uint8_t intensity) {
-  if (brightnessPin >= 0 && intensity != currentBrightness) {
-    fadingBrightness = true;
-    targetBrightness = intensity;
-    fadingBrightnessOperation = intensity > currentBrightness ? POSITIVE : NEGATIVE;
+  if (brightnessPin >= 0) {
+    analogWrite(brightnessPin, intensity);
   }
 }
 
@@ -161,57 +140,29 @@
   }
 }
 
-void LCD::refresh() {
-  if (fadingBrightness && millis() - lastBrightnessMillis > UPDATE_BRIGHTNESS_EVERY_MILLIS) {
-    analogWrite(brightnessPin, (pow(256, (currentBrightness / 255.0)) - 1) + 0.5);
-    
-    if (fadingBrightnessOperation == NEGATIVE)
-      currentBrightness--;
-    else
-      currentBrightness++;
+ void LCD::refresh() {
+  if ((!finished || (finished && continuous && textLenght > cols - startingCol)) && millis() - lastPrinted > timeout) {
+    if (current == NULL || *current == '\0') {
+      finished = true;
+      if (continuous) {
+        current = text;
 
-    if (currentBrightness == targetBrightness) {
-      fadingBrightness = false;
-    } else {
-      lastBrightnessMillis = millis();
-    }
-  }
-
-  if (fadingContrast && millis() - lastContrastMillis > UPDATE_CONTRAST_EVERY_MILLIS) {
-    analogWrite(contrastPin, (pow(256, (currentContrast / 255.0)) - 1) + 0.5);
-    
-    currentContrast++;
-    if (currentContrast == targetContrast) {
-      fadingContrast = false;
-    } else {
-      lastContrastMillis = millis();
-    }
-  }
-
-   if (printingText) {
-    if ((!finished || (finished && continuous && textLenght > cols - startingCol)) && millis() - lastPrinted > timeout) {
-      if (current == NULL || *current == '\0') {
-        finished = true;
-        if (continuous) {
-          current = text;
-
-          clearLine();
-          printInitialText();
-          this->setCursor(cols - 1, line);
-          lastPrinted = millis();
-        }
-      } else {
-        uint8_t cursor = current - text < cols ? cols - (current - text) - 1 : 0;
-
-        this->setCursor(cursor, line);
-        while (cursor < cols - 1) {
-          this->print(*(current - (cols - cursor) + 1));
-          cursor++;
-        }
-
-        this->print(*(current++));
+         clearLine();
+        printInitialText();
+        this->setCursor(cols - 1, line);
         lastPrinted = millis();
       }
+    } else {
+      uint8_t cursor = current - text < cols ? cols - (current - text) - 1 : 0;
+
+       this->setCursor(cursor, line);
+      while (cursor < cols - 1) {
+        this->print(*(current - (cols - cursor) + 1));
+        cursor++;
+      }
+
+       this->print(*(current++));
+      lastPrinted = millis();
     }
-   }
+  }
 }

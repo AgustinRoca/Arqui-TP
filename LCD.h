@@ -1,38 +1,22 @@
 #ifndef _LCD_H_
 #define _LCD_H_
 
-#include "Arduino.h"
+ #include "Arduino.h"
 #include <LiquidCrystal.h>
 
  class LCD : public LiquidCrystal {
   private:
-    uint32_t lastBrightnessMillis;
-    uint32_t lastContrastMillis;
     uint64_t lastPrinted;
     uint16_t textLenght;
     uint8_t startingCol;
     uint32_t timeout;
-
     bool continuous;
     bool finished;
-
-    uint8_t fadingBrightnessOperation;
-    uint8_t fadingContrastOperation;
-    
-    bool fadingBrightness;
-    bool fadingContrast;
-    bool printingText;
-
     char* current;
     uint8_t rows;
     uint8_t cols;
     uint8_t line;
     char* text;
-
-    uint8_t currentBrightness;
-    uint8_t targetBrightness;
-    uint8_t currentContrast;
-    uint8_t targetContrast;
 
      int16_t brightnessPin;
     int16_t contrastPin;
@@ -53,7 +37,7 @@
     LCD(uint8_t rs, uint8_t enable,
       uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3);
 
-    void setCharacterTimeout(uint32_t _timeout);
+     void setCharacterTimeout(uint32_t _timeout);
     void setText(char* _text, uint8_t _line);
     void setContinuous(bool _continuous);
     void setBrightnessPin(int16_t pin);

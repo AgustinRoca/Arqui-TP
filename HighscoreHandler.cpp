@@ -54,9 +54,8 @@ void HighscoreHandler::resetScores(){
 }
 
 /* Libera el espacio reservado en heap para el arreglo de scores */
-void HighscoreHandler::freeScores() {
-  if (scores != NULL)
-    free(scores);
+void HighscoreHandler::freeScores(){
+  free(scores);
 }
 
 /* ------------------------------------------------------------------------------------------------------------- */

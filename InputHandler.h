@@ -17,7 +17,8 @@ class InputHandler {
     
     void registerPin(uint8_t pin, uint8_t activeType, bool internalPullup);
     void registerPin(uint8_t pin, uint8_t activeType);
-    uint8_t getActivePinsCount();
+    int16_t getActivePin();
     const uint8_t * readInputs();
+    uint8_t getActivePinsCount();
 };
 #endif
