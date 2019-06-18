@@ -34,7 +34,7 @@ uint64_t Snake::getCurrentSpeed() {
 }
 
 uint64_t Snake::getAliveTime() {
-  return alive ? stopTime - startTime : millis() - startTime;
+  return alive ? millis() - startTime : stopTime - startTime ;
 }
 
 Position* Snake::getBody() {

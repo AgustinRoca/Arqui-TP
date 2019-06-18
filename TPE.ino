@@ -11,15 +11,18 @@
 #define MATRIX_COLUMNS 8 // Cantidad de columnas de LEDs que tiene UNA matriz
 #define MATRIX_ROWS 8 // Cantidad de filas de LEDs que tiene UNA matriz
 #define MATRIX_SIZE (MATRIX_ROWS * MATRIX_COLUMNS) // Cantidad total de LEDs que tiene UNA matriz
-#define MAX_LENGTH (MATRIX_SIZE * VERTICAL_MATRIXES_QTY * HORIZONTAL_MATRIXES_QTY) // Cantidad total de LEDs totals que tiene la pantalla completa (la vibora no puede ser mas grande que eso tampoco)
 #define HORIZONTAL_MATRIXES_QTY 2
 #define VERTICAL_MATRIXES_QTY 2
+#define MATRIX_QTY (VERTICAL_MATRIXES_QTY * HORIZONTAL_MATRIXES_QTY)
+#define MAX_LENGTH (MATRIX_SIZE * MATRIX_QTY) // Cantidad total de LEDs totals que tiene la pantalla completa (la vibora no puede ser mas grande que eso tampoco)
 
 #define LCD_COLS 20
 #define LCD_ROWS 4
+#define DEFAULT_CONTRAST 50
 
 /* Constantes que definen la intensidad de un LED para que se considere prendido o apagado */
-#define ON 8 //intensidad de led cuando se prende
+#define DEFAULT_LED_INTENSITY 8 //intensidad de led cuando se prende
+#define GET_LCD_INTENSITY(x) (x > 0 ? x * 32 - 1 : 0)
 #define OFF 0 //intensidad de led cuando se apaga
 
 /* Constantes relacionadas con las condiciones iniciales de la vibora*/
@@ -42,13 +45,141 @@
 #define RIGHT_BUTTON_PIN 4 // Pin en la que se conecta la flechita derecha
 #define SELECT_BUTTON_PIN 6
 #define DATA_PIN 11 // Pin que se conecta al DIN de la matriz
-#define CLK_PIN 10 // Pin que se conecta al CLK de la matriz
-#define CS_PIN 13 // Pin que se conecta al CS de la matriz
+#define CLK_PIN 13 // Pin que se conecta al CLK de la matriz
+#define CS_PIN 10 // Pin que se conecta al CS de la matriz
 
 #define CONTRAST_PIN 3
 #define BRIGHTNESS_PIN 5
+
+
 /* PROBABLEMENTE SE ELIMINE CUANDO HAYA BOTONES */
 /* Limpia el serial */
+void cleanSerial(); 
+
+/* SE CAMBIA CUANDO HAYA BOTONES */
+/* Traduce el boton apretado y devuelve la direccion en la que deberia seguir la vibora en base a ese boton, si no hubo boton apretado, sigue en la misma direccion que estaba */
+Direction translateInput(Direction currentDir, LCD * lcd, HighscoreHandler * highscore, InputHandler input, MaxMatrix screen, uint8_t * intensity);
+
+/* SE CAMBIA CUANDO HAYA LCD */
+/* Imprime los puntajes maximos que se almacenaron (en Serial por ahora) */
+void printHighscores(HighscoreHandler highscore, LCD * lcd);
+
+/* Traduce la posicion pos a pixeles de la screen y la imprime con intensidad intensity,si se le manda una posicion valida la ignora */
+void setDotInScreen(Position pos, MaxMatrix * screen, uint8_t intensity);
+
+/* Prende todo el array de body en las matrices (asume que la pantalla esta limpia antes) */
+void printWholeBody(Position body[MAX_LENGTH], int currentLength, int head, MaxMatrix * screen, uint8_t intensity);
+
+/* Prende el LED de la nueva cabeza de la vibora, apaga el LED de la vieja cola de la vibora */
+void printMove(Position newHead, Position oldTail, MaxMatrix * screen, int intensity);
+
+/* Imprime la cruz cuando se pierde */
+void printSkull(MaxMatrix * screen, LCD * lcd, uint32_t score);
+
+/* SE CAMBIA CUANDO HAYA LCD */
+void printMenu(HighscoreHandler * highscore, uint8_t * intensity, LCD * lcd);
+
+
+/* SE CAMBIA CUANDO HAYA BOTONES */
+/* Lee la opcion del menu que se selecciono, y se ejecuta, si se le manda solo 4 o solo 5 se rompe (igual esto cambia cuando haya botones) */
+void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, HighscoreHandler * highscore,  MaxMatrix * screen,uint8_t * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor, uint8_t * lcdIntensity);
+
+/* Creacion de variables globales */
+Snake snake(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS, HORIZONTAL_MATRIXES_QTY * MATRIX_COLUMNS, VERTICAL_MATRIXES_QTY * MATRIX_ROWS); // La parte logica de la viborita
+InputHandler inputHandler;
+HighscoreHandler highscore;
+
+bool enlarge = false; // True si hay que agrandar la vibora en el siguiente turno
+Direction input = INIT_DIR; // La direccion que empieza la vibora (lo inicializo en eso porque si no hay boton devuelve eso)
+uint64_t lastMovedMillis = 0; // El tiempo (en ms) en el que se movio la vibora la ultima vez
+uint64_t lastUpdatedMillis = 0; // El tiempo (en ms) en los que se agrando la vibora la ultima vez
+double waitTimeFactor = 1;
+double waitDecreaseRatioFactor = 1;
+
+LCD lcd(A5, A4, A3, A2, A1, A0);
+MaxMatrix screen(DATA_PIN,CS_PIN,CLK_PIN, MATRIX_QTY);  //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
+
+uint8_t contrast = DEFAULT_CONTRAST;
+uint8_t intensity = DEFAULT_LED_INTENSITY;
+uint8_t lcdIntensity = GET_LCD_INTENSITY(DEFAULT_LED_INTENSITY);
+
+void setup() {
+  // Inicializacion de botones
+  inputHandler.registerPin(RIGHT_BUTTON_PIN, LOW);
+  inputHandler.registerPin(LEFT_BUTTON_PIN, LOW);
+  inputHandler.registerPin(SELECT_BUTTON_PIN, LOW);
+
+  //INICIALIZACION DE LCD
+  lcd.begin(LCD_COLS, LCD_ROWS);
+  lcd.clear();
+  lcd.setContrastPin(CONTRAST_PIN);
+  lcd.setBrightnessPin(BRIGHTNESS_PIN);
+  lcd.setRows(LCD_ROWS);
+  lcd.setCols(LCD_COLS);
+  lcd.setStartingCol(0);
+  lcd.setContinuous(false);
+  lcd.setCharacterTimeout(500);
+  lcd.setContrast(DEFAULT_CONTRAST);
+  lcd.setBrightness(lcdIntensity);
+  
+  /* SE ELIMINA CUANDO HAYA BOTONES */
+  Serial.begin(115200);
+  
+  //Inicializacion de las matrices de LEDs
+  screen.init();
+  screen.setIntensity(intensity);
+  screen.clear();
+
+  //Inicializacion del manejador de puntajes maximos
+  highscore.initialize(INITIAL_EEPROM_ADDRESS, MAX_HIGHSCORES);
+
+  //Se imprime el menu
+  printMenu(&highscore, &intensity, &lcd);
+}
+
+void loop() {
+  if(snake.isAlive()){
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print((long unsigned int)snake.getAliveTime());
+    if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
+      snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO * waitDecreaseRatioFactor);
+      enlarge = true;
+      
+      lastUpdatedMillis = millis();
+    }
+  
+    // Si hubo tecla, devuelve la direccion en la que deberia ir la vibora ahora
+    input = translateInput(input, &lcd, &highscore, inputHandler, screen, &intensity);
+    
+    if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
+      Position oldTail = snake.getBody()[(MAX_LENGTH + snake.getHead() - (snake.getCurrentLength() - 1) ) % MAX_LENGTH]; // Guardo la cola de la vibora para apagar despues (La guardo por si estamos en el caso limite en que el head pise a la cola en el array de body)
+      snake.moveSnake(input, enlarge);
+      enlarge = false; // Si lo agrandaba, ya no lo tengo que agrandar
+    
+      if(snake.isAlive()){ // Si sigue viva despues de ese movimiento
+        printMove(snake.getBody()[snake.getHead()], oldTail, &screen, intensity); // Actualizo la pantalla 
+      }
+      else{
+        printSkull(&screen, &lcd, snake.getAliveTime()); // Imprimo la pantalla de GAME OVER
+        snake.freeSnake(); // Libera solo el body, no es un destructor
+        highscore.registerScore(snake.getAliveTime()); // Si fue un highscore, lo guarda
+        delay(1000); // Para que se vea la pantalla de GAME OVER
+        printMenu(&highscore, &intensity, &lcd);
+      }
+      
+      lastMovedMillis = millis();
+    }
+  }
+  else{
+    readMenuInput(&snake, &inputHandler, &lcd, &highscore, &screen, &intensity, &lastUpdatedMillis, &lastMovedMillis, &input, &waitTimeFactor, &waitDecreaseRatioFactor, &lcdIntensity);
+  }
+
+
+  
+  lcd.refresh();
+}
+
 void cleanSerial(){
   while(Serial.available()){
     Serial.read();
@@ -57,7 +188,7 @@ void cleanSerial(){
 
 /* SE CAMBIA CUANDO HAYA BOTONES */
 /* Traduce el boton apretado y devuelve la direccion en la que deberia seguir la vibora en base a ese boton, si no hubo boton apretado, sigue en la misma direccion que estaba */
-Direction translateInput(Direction currentDir, LCD * lcd, HighscoreHandler * highscore, InputHandler input, MaxMatrix screen, int * intensity){
+Direction translateInput(Direction currentDir, LCD * lcd, HighscoreHandler * highscore, InputHandler input, MaxMatrix screen, uint8_t * intensity){
   if(Serial.available()){
     char c = Serial.read(); //Deberiamos agregar un while(Serial.available()) para que lea todo el buffer por si se insertaron mas de una letra? Nos quedamos con la primera o la ultima?
     cleanSerial();
@@ -80,8 +211,19 @@ Direction translateInput(Direction currentDir, LCD * lcd, HighscoreHandler * hig
         return currentDir;
     }
   }
-  else
+  else {
+    const uint8_t* activeButtons = input.readInputs();
+    uint8_t activeButtonsCount = input.getActivePinsCount();
+    if (activeButtonsCount > 0) {
+      if (activeButtons[0] == LEFT_BUTTON_PIN) {
+        currentDir = (Direction) ((4 + currentDir - 1) % 4);
+      } else if (activeButtons[0] == RIGHT_BUTTON_PIN) {
+        currentDir = (Direction) ((currentDir + 1) % 4);
+      }
+    }
+        
     return currentDir;
+  }
 }
 
 
@@ -99,10 +241,25 @@ void printHighscores(HighscoreHandler highscore, LCD * lcd) {
     Serial.println("No hay puntajes registrados");
   }
   Serial.println("--------------------------------------------");
+
+  lcd->setCursor(0,0);
+  lcd->print("Puntajes Maximos:");
+  if (highscore.getScoresAmmount() > 0) {
+    for(int i=0; i<highscore.getScoresAmmount(); i++){
+      lcd->setCursor(0,i+1);
+      lcd->print(i+1);
+      lcd->print(". ");
+      lcd->print((long)highscore.getScores()[i]);
+    }
+  } else {
+    lcd->setCursor(0,1);
+    lcd->print("No hay puntajes registrados");
+  }
+  
 }
 
 /* Traduce la posicion pos a pixeles de la screen y la imprime con intensidad intensity,si se le manda una posicion valida la ignora */
-void setDotInScreen(Position pos, MaxMatrix * screen, int intensity){
+void setDotInScreen(Position pos, MaxMatrix * screen, uint8_t intensity){
   if(pos.x < MATRIX_COLUMNS){ // Matrices izquierdas
     if(pos.y < MATRIX_ROWS){ // Matriz abajo-izquierda (1era matriz de la cascada)
       screen->setDot(7-pos.y, 7-pos.x, intensity);
@@ -122,24 +279,31 @@ void setDotInScreen(Position pos, MaxMatrix * screen, int intensity){
 }
 
 /* Prende todo el array de body en las matrices (asume que la pantalla esta limpia antes) */
-void printWholeBody(Position body[MAX_LENGTH], int currentLength, int head, MaxMatrix * screen, int intensity){
+void printWholeBody(Position body[MAX_LENGTH], int currentLength, int head, MaxMatrix * screen, uint8_t intensity){
   for(int i=0; i<currentLength; i++){
     setDotInScreen(body[(MAX_LENGTH + head-i)%MAX_LENGTH], screen, intensity);
   }
 }
 
 /* Prende el LED de la nueva cabeza de la vibora, apaga el LED de la vieja cola de la vibora */
-void printMove(Position newHead, Position oldTail, MaxMatrix * screen, int intensity){
+void printMove(Position newHead, Position oldTail, MaxMatrix * screen, uint8_t intensity){
   setDotInScreen(oldTail, screen, OFF);
   setDotInScreen(newHead, screen, intensity);
 }
 
 /* Imprime la cruz cuando se pierde */
-void printSkull(MaxMatrix * screen, LCD * lcd){ //TODO: ACTUALIZAR PARA 4 MATRICES
+void printSkull(MaxMatrix * screen, LCD * lcd, uint32_t score){ //TODO: ACTUALIZAR PARA 4 MATRICES
   byte skull1[8]= {B00011001,B00001111,B00001111,B00000011,B00110010,B00010000,B00000000,B00000000}; //Parte que deberia ir en la matriz abajo-izquierda
   byte skull2[8]= {B00000000,B00000000,B00100000,B01100101,B00000111,B00011110,B00011111,B00110011}; //Parte que deberia ir en la matriz abajo-derecha
   byte skull3[8]= {B00000000,B00010000,B00110000,B00000111,B00001111,B00001111,B00011100,B00011000}; //Parte que deberia ir en la 3era matriz arriba-izquierda
-  byte skull4[8]= {B00110001,B00111001,B00011111,B00011111,B00001111,B01100000,B00100000,B00000000}; //Parte que deberia ir en la 4ta matriz arriba-derecha
+  byte skull4[8]= {B00110001,B00111001,B00011111,B00011111,B00001111,B01100000,B00100000,B00000000}; //Parte que deberia ir en la 4ta matriz arriba-derecha\
+
+  lcd->setCursor(0,0);
+  lcd->print("GAME OVER");
+  lcd->setCursor(0,1);
+  lcd->print("Score: ");
+  lcd->print(score);
+  
   for(int i=0; i<8; i++){
     screen->setColumn(7-i, skull1[7-i]);
     screen->setColumn(i+MATRIX_COLUMNS, skull2[i]);
@@ -148,11 +312,12 @@ void printSkull(MaxMatrix * screen, LCD * lcd){ //TODO: ACTUALIZAR PARA 4 MATRIC
     screen->setColumn((7-i)+2*MATRIX_COLUMNS, skull3[7-i]);
     screen->setColumn(i+3*MATRIX_COLUMNS, skull4[i]);
   }
+  lcd->clear();
 }
 
 
 /* SE CAMBIA CUANDO HAYA LCD */
-void printMenu(HighscoreHandler * highscore, int * intensity, LCD * lcd){
+void printMenu(HighscoreHandler * highscore, uint8_t * intensity, LCD * lcd){
   Serial.println("\nSNAKE\n");
   Serial.println("1. Play");
   Serial.println("2. Show Highscores");
@@ -160,12 +325,21 @@ void printMenu(HighscoreHandler * highscore, int * intensity, LCD * lcd){
   Serial.println("4x. Set Intensity in x (x = (1..8))"); //Ejemplo: 41 = set Intensity in 1
   Serial.println("5x. Dificulty in x ( x = 1, 2 or 3)"); //Ejemplo: 53 = set Dificulty in 3
   Serial.println("--------------------------------------------");
+
+  lcd->setCursor(0,0);
+  lcd->print("SNAKE");
+  lcd->setCursor(0,1);
+  lcd->print("1. Play");
+  lcd->setCursor(0,2);
+  lcd->print("2. Show Highscores");
+  lcd->setCursor(0,3);
+  lcd->print("3. Reset Highscores");
 }
 
 
 /* SE CAMBIA CUANDO HAYA BOTONES */
 /* Lee la opcion del menu que se selecciono, y se ejecuta, si se le manda solo 4 o solo 5 se rompe (igual esto cambia cuando haya botones) */
-void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, HighscoreHandler * highscore,  MaxMatrix * screen,int * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor){
+void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, HighscoreHandler * highscore,  MaxMatrix * screen,uint8_t * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor, uint8_t * lcdIntensity){
   if(Serial.available()){
     char c = Serial.read(); //Deberiamos agregar un while(Serial.available()) para que lea todo el buffer por si se insertaron mas de una letra? Nos quedamos con la primera o la ultima?
     switch(toupper(c)){
@@ -177,8 +351,10 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
         *input = INIT_DIR;
       break;
       case '2': // Show Highscores
+        lcd->clear();
         printHighscores(*highscore, lcd);
         delay(2000);
+        lcd->clear();
       break;
       case '3': // Reset Highscores
         highscore->resetScores();
@@ -186,6 +362,8 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
       case '4': // Set intensity
         *intensity = Serial.read() - '0';
         screen->setIntensity(*intensity);
+        *lcdIntensity = GET_LCD_INTENSITY(*intensity);
+        lcd->setBrightness(*lcdIntensity);
         break;
       case '5': // Dificulty
         *waitDecreaseRatioFactor = *waitTimeFactor = 1;
@@ -199,90 +377,6 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
     if(toupper(c) != '1' && c!='\r'){
       printMenu(highscore, intensity, lcd);
     }
-  }
-}
-
-/* Creacion de variables globales */
-Snake snake(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS, HORIZONTAL_MATRIXES_QTY * MATRIX_COLUMNS, VERTICAL_MATRIXES_QTY * MATRIX_ROWS); // La parte logica de la viborita
-MaxMatrix screen(DATA_PIN,CS_PIN,CLK_PIN,4);  //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
-Direction input = INIT_DIR; // La direccion que empieza la vibora (lo inicializo en eso porque si no hay boton devuelve eso)
-uint64_t lastMovedMillis = 0; // El tiempo (en ms) en el que se movio la vibora la ultima vez
-uint64_t lastUpdatedMillis = 0; // El tiempo (en ms) en los que se agrando la vibora la ultima vez
-bool enlarge = false; // True si hay que agrandar la vibora en el siguiente turno
-HighscoreHandler highscore;
-InputHandler inputHandler;
-int intensity = ON;
-double waitTimeFactor = 1;
-double waitDecreaseRatioFactor = 1;
-LCD lcd(A5, A4, A3, A2, A1, A0);
-
-void setup() {
-  // Inicializacion de botones
-  inputHandler.registerPin(RIGHT_BUTTON_PIN, LOW);
-  inputHandler.registerPin(LEFT_BUTTON_PIN, LOW);
-  inputHandler.registerPin(SELECT_BUTTON_PIN, LOW);
-
-  //INICIALIZACION DE LCD
-  lcd.begin(LCD_ROWS, LCD_COLS);
-  lcd.clear();
-  lcd.setContrastPin(CONTRAST_PIN);
-  lcd.setBrightnessPin(BRIGHTNESS_PIN);
-  lcd.setRows(LCD_ROWS);
-  lcd.setCols(LCD_COLS);
-  lcd.setStartingCol(0);
-  lcd.setContinuous(false);
-  lcd.setCharacterTimeout(500);
-  lcd.setContrast(50);
-  lcd.setBrightness(255);
-  
-  /* SE ELIMINA CUANDO HAYA BOTONES */
-  Serial.begin(115200);
-  
-  //Inicializacion de las matrices de LEDs
-  screen.init();
-  screen.setIntensity(intensity);
-  screen.clear();
-
-  //Inicializacion del manejador de puntajes maximos
-  highscore.initialize(INITIAL_EEPROM_ADDRESS, MAX_HIGHSCORES);
-
-  //Se imprime el menu
-  printMenu(&highscore, &intensity, &lcd);
-}
-
-void loop() {
-  if(snake.isAlive()){
-    if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
-      snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO * waitDecreaseRatioFactor);
-      enlarge = true;
-      
-      lastUpdatedMillis = millis();
-    }
-  
-    // Si hubo tecla, devuelve la direccion en la que deberia ir la vibora ahora
-    input = translateInput(input, &lcd, &highscore, inputHandler, screen, &intensity);
-    
-    if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
-      Position oldTail = snake.getBody()[(MAX_LENGTH + snake.getHead() - (snake.getCurrentLength() - 1) ) % MAX_LENGTH]; // Guardo la cola de la vibora para apagar despues (La guardo por si estamos en el caso limite en que el head pise a la cola en el array de body)
-      snake.moveSnake(input, enlarge);
-      enlarge = false; // Si lo agrandaba, ya no lo tengo que agrandar
-    
-      if(snake.isAlive()){ // Si sigue viva despues de ese movimiento
-        printMove(snake.getBody()[snake.getHead()], oldTail, &screen, intensity); // Actualizo la pantalla 
-      }
-      else{
-        printSkull(&screen, &lcd); // Imprimo la pantalla de GAME OVER
-        snake.freeSnake(); // Libera solo el body, no es un destructor
-        highscore.registerScore(snake.getAliveTime()); // Si fue un highscore, lo guarda
-        delay(1000); // Para que se vea la pantalla de GAME OVER
-        printMenu(&highscore, &intensity, &lcd);
-      }
-      
-      lastMovedMillis = millis();
-    }
-  }
-  else{
-    readMenuInput(&snake, &inputHandler, &lcd, &highscore, &screen, &intensity, &lastUpdatedMillis, &lastMovedMillis, &input, &waitTimeFactor, &waitDecreaseRatioFactor);
   }
 }
   
