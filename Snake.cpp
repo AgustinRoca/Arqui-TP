@@ -1,7 +1,7 @@
 #include "Snake.h"
 
 // TODO: Chequear constraints iniciales
-Snake::Snake(uint16_t initialLength, Direction initialDirection, uint64_t initialSpeed, uint16_t initialRow, uint16_t initialColumn, uint16_t _columns, uint16_t _rows) {
+Snake::Snake(uint16_t initialLength, Direction initialDirection, uint32_t initialSpeed, uint16_t initialRow, uint16_t initialColumn, uint16_t _columns, uint16_t _rows) {
   currentDirection = initialDirection;
   currentLength = initialLength;
   currentSpeed = initialSpeed;
@@ -29,11 +29,11 @@ uint16_t Snake::getCurrentLength() {
   return currentLength;
 }
 
-uint64_t Snake::getCurrentSpeed() {
+uint32_t Snake::getCurrentSpeed() {
   return currentSpeed;
 }
 
-uint64_t Snake::getAliveTime() {
+uint32_t Snake::getAliveTime() {
   return alive ? millis() - startTime : stopTime - startTime ;
 }
 
@@ -51,11 +51,11 @@ bool Snake::isAlive() {
 
 
 /* Setters */
-void Snake::setCurrentSpeed(uint64_t newSpeed) {
+void Snake::setCurrentSpeed(uint32_t newSpeed) {
   currentSpeed = newSpeed;
 }
 
-void Snake::revive(uint16_t initialLength, Direction initialDirection, uint64_t initialSpeed, uint16_t initialRow, uint16_t initialColumn) {
+void Snake::revive(uint16_t initialLength, Direction initialDirection, uint32_t initialSpeed, uint16_t initialRow, uint16_t initialColumn) {
   currentDirection = initialDirection;
   currentLength = initialLength;
   currentSpeed = initialSpeed;
@@ -77,7 +77,7 @@ bool Snake::moveSnake(Direction newDirection, bool enlarge) {
     return false;
   }
 
-  uint64_t possibleStopTime = millis();  // Don't account for time spent on routine
+  uint32_t possibleStopTime = millis();  // Don't account for time spent on routine
   
   switch(newDirection){ // CREO QUE SE PUEDE SACAR LOS IFS, casi seguro
     case UP:

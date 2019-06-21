@@ -18,7 +18,7 @@
 
 #define LCD_COLS 20
 #define LCD_ROWS 4
-#define DEFAULT_CONTRAST 50
+#define DEFAULT_CONTRAST 155
 
 /* Constantes que definen la intensidad de un LED para que se considere prendido o apagado */
 #define DEFAULT_LED_INTENSITY 8 //intensidad de led cuando se prende
@@ -41,15 +41,17 @@
 
 
 /* Constantes relacionadas a los pins usados para conectar las componentes a la placa*/
-#define LEFT_BUTTON_PIN 2 // Pin en la que se conecta la flechita izquierda
+#define LEFT_BUTTON_PIN 9 // Pin en la que se conecta la flechita izquierda
 #define RIGHT_BUTTON_PIN 4 // Pin en la que se conecta la flechita derecha
 #define SELECT_BUTTON_PIN 6
-#define DATA_PIN 11 // Pin que se conecta al DIN de la matriz
-#define CLK_PIN 13 // Pin que se conecta al CLK de la matriz
-#define CS_PIN 10 // Pin que se conecta al CS de la matriz
+#define DATA_PIN 2 // Pin que se conecta al DIN de la matriz
+#define CLK_PIN 3 // Pin que se conecta al CLK de la matriz
+#define CS_PIN 8 // Pin que se conecta al CS de la matriz
 
-#define CONTRAST_PIN 3
+#define CONTRAST_PIN 10
 #define BRIGHTNESS_PIN 5
+
+#define LCD_CHARACTER_TIMEOUT 1000
 
 
 /* PROBABLEMENTE SE ELIMINE CUANDO HAYA BOTONES */
@@ -96,7 +98,7 @@ uint64_t lastUpdatedMillis = 0; // El tiempo (en ms) en los que se agrando la vi
 double waitTimeFactor = 1;
 double waitDecreaseRatioFactor = 1;
 
-LCD lcd(A5, A4, A3, A2, A1, A0);
+LCD lcd(A5, A4, A3, A2, A1, A0, LCD_COLS, LCD_ROWS);
 MaxMatrix screen(DATA_PIN,CS_PIN,CLK_PIN, MATRIX_QTY);  //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
 
 uint8_t contrast = DEFAULT_CONTRAST;
@@ -104,26 +106,24 @@ uint8_t intensity = DEFAULT_LED_INTENSITY;
 uint8_t lcdIntensity = GET_LCD_INTENSITY(DEFAULT_LED_INTENSITY);
 
 void setup() {
+  Serial.begin(115200);
+
   // Inicializacion de botones
   inputHandler.registerPin(RIGHT_BUTTON_PIN, LOW);
   inputHandler.registerPin(LEFT_BUTTON_PIN, LOW);
   inputHandler.registerPin(SELECT_BUTTON_PIN, LOW);
 
   //INICIALIZACION DE LCD
-  lcd.begin(LCD_COLS, LCD_ROWS);
-  lcd.clear();
+  lcd.begin();
+
   lcd.setContrastPin(CONTRAST_PIN);
   lcd.setBrightnessPin(BRIGHTNESS_PIN);
-  lcd.setRows(LCD_ROWS);
-  lcd.setCols(LCD_COLS);
-  lcd.setStartingCol(0);
-  lcd.setContinuous(false);
-  lcd.setCharacterTimeout(500);
+  lcd.setCharacterTimeout(LCD_CHARACTER_TIMEOUT);
+
   lcd.setContrast(DEFAULT_CONTRAST);
   lcd.setBrightness(lcdIntensity);
   
   /* SE ELIMINA CUANDO HAYA BOTONES */
-  Serial.begin(115200);
   
   //Inicializacion de las matrices de LEDs
   screen.init();
@@ -137,11 +137,13 @@ void setup() {
   printMenu(&highscore, &intensity, &lcd);
 }
 
-void loop() {
+void loop() {  
   if(snake.isAlive()){
+    char stringBuffer[20] = {0};
+    sprintf(stringBuffer, "%ld", snake.getAliveTime());
     lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print((long unsigned int)snake.getAliveTime());
+    lcd.addText(stringBuffer, 0);
+    
     if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
       snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO * waitDecreaseRatioFactor);
       enlarge = true;
@@ -174,8 +176,6 @@ void loop() {
   else{
     readMenuInput(&snake, &inputHandler, &lcd, &highscore, &screen, &intensity, &lastUpdatedMillis, &lastMovedMillis, &input, &waitTimeFactor, &waitDecreaseRatioFactor, &lcdIntensity);
   }
-
-
   
   lcd.refresh();
 }
@@ -242,18 +242,18 @@ void printHighscores(HighscoreHandler highscore, LCD * lcd) {
   }
   Serial.println("--------------------------------------------");
 
-  lcd->setCursor(0,0);
-  lcd->print("Puntajes Maximos:");
+  // lcd->setCursor(0,0);
+  // lcd->print("Puntajes Maximos:");
   if (highscore.getScoresAmmount() > 0) {
     for(int i=0; i<highscore.getScoresAmmount(); i++){
-      lcd->setCursor(0,i+1);
-      lcd->print(i+1);
-      lcd->print(". ");
-      lcd->print((long)highscore.getScores()[i]);
+      // lcd->setCursor(0,i+1);
+      // lcd->print(i+1);
+      // lcd->print(". ");
+      // lcd->print((long)highscore.getScores()[i]);
     }
   } else {
-    lcd->setCursor(0,1);
-    lcd->print("No hay puntajes registrados");
+    // lcd->setCursor(0,1);
+    // lcd->addText("No hay puntajes registrados");
   }
   
 }
@@ -297,12 +297,12 @@ void printSkull(MaxMatrix * screen, LCD * lcd, uint32_t score){ //TODO: ACTUALIZ
   byte skull2[8]= {B00000000,B00000000,B00100000,B01100101,B00000111,B00011110,B00011111,B00110011}; //Parte que deberia ir en la matriz abajo-derecha
   byte skull3[8]= {B00000000,B00010000,B00110000,B00000111,B00001111,B00001111,B00011100,B00011000}; //Parte que deberia ir en la 3era matriz arriba-izquierda
   byte skull4[8]= {B00110001,B00111001,B00011111,B00011111,B00001111,B01100000,B00100000,B00000000}; //Parte que deberia ir en la 4ta matriz arriba-derecha\
-
-  lcd->setCursor(0,0);
-  lcd->print("GAME OVER");
-  lcd->setCursor(0,1);
-  lcd->print("Score: ");
-  lcd->print(score);
+  
+  char stringBuffer[30] = {0};
+  sprintf(stringBuffer, "Score: %ld", score);
+  lcd->clear();
+  lcd->addText("GAME OVER", 0);
+  lcd->addText(stringBuffer, 0);
   
   for(int i=0; i<8; i++){
     screen->setColumn(7-i, skull1[7-i]);
@@ -312,7 +312,6 @@ void printSkull(MaxMatrix * screen, LCD * lcd, uint32_t score){ //TODO: ACTUALIZ
     screen->setColumn((7-i)+2*MATRIX_COLUMNS, skull3[7-i]);
     screen->setColumn(i+3*MATRIX_COLUMNS, skull4[i]);
   }
-  lcd->clear();
 }
 
 
@@ -326,14 +325,13 @@ void printMenu(HighscoreHandler * highscore, uint8_t * intensity, LCD * lcd){
   Serial.println("5x. Dificulty in x ( x = 1, 2 or 3)"); //Ejemplo: 53 = set Dificulty in 3
   Serial.println("--------------------------------------------");
 
-  lcd->setCursor(0,0);
-  lcd->print("SNAKE");
-  lcd->setCursor(0,1);
-  lcd->print("1. Play");
-  lcd->setCursor(0,2);
-  lcd->print("2. Show Highscores");
-  lcd->setCursor(0,3);
-  lcd->print("3. Reset Highscores");
+  lcd->clear();
+  lcd->addText("1. Play", 0);
+  lcd->addText("2. Show Highscores", 0);
+  lcd->addText("3. Reset Highscores", 0);
+  lcd->addText("4. Intensity", 0);
+  lcd->addText("5. Dificulty", 0);
+  lcd->setShowCursor(true);
 }
 
 
@@ -376,6 +374,25 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
     cleanSerial();
     if(toupper(c) != '1' && c!='\r'){
       printMenu(highscore, intensity, lcd);
+    }
+  } else {
+    const uint8_t* activeButtons = inputHandler->readInputs();
+    uint8_t activeButtonsCount = inputHandler->getActivePinsCount();
+    if (activeButtonsCount > 0) {
+      switch(activeButtons[0]) {
+        case LEFT_BUTTON_PIN:
+          lcd->upButtonPressed();
+          Serial.println("Button left");
+          break;
+        case RIGHT_BUTTON_PIN:
+          lcd->downButtonPressed();
+          Serial.println("Button right");
+          break;
+        case SELECT_BUTTON_PIN:
+          lcd->selectButtonPressed();
+          Serial.println("Button select");
+          break;
+      }
     }
   }
 }
