@@ -95,6 +95,7 @@
 
     uint8_t rows;
     uint8_t cols;
+    uint8_t cursorRow;
 
     uint8_t currentBrightness;
     uint8_t targetBrightness;

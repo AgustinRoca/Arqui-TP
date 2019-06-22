@@ -42,8 +42,8 @@
 
 /* Constantes relacionadas a los pins usados para conectar las componentes a la placa*/
 #define LEFT_BUTTON_PIN 9 // Pin en la que se conecta la flechita izquierda
-#define RIGHT_BUTTON_PIN 4 // Pin en la que se conecta la flechita derecha
-#define SELECT_BUTTON_PIN 6
+#define RIGHT_BUTTON_PIN 6 // Pin en la que se conecta la flechita derecha
+#define SELECT_BUTTON_PIN 4
 #define DATA_PIN 2 // Pin que se conecta al DIN de la matriz
 #define CLK_PIN 3 // Pin que se conecta al CLK de la matriz
 #define CS_PIN 8 // Pin que se conecta al CS de la matriz
@@ -52,6 +52,8 @@
 #define BRIGHTNESS_PIN 5
 
 #define LCD_CHARACTER_TIMEOUT 1000
+
+#define NO_BUTTON -1
 
 
 /* PROBABLEMENTE SE ELIMINE CUANDO HAYA BOTONES */
@@ -97,6 +99,7 @@ uint64_t lastMovedMillis = 0; // El tiempo (en ms) en el que se movio la vibora 
 uint64_t lastUpdatedMillis = 0; // El tiempo (en ms) en los que se agrando la vibora la ultima vez
 double waitTimeFactor = 1;
 double waitDecreaseRatioFactor = 1;
+int16_t lastButtonRead = NO_BUTTON;
 
 LCD lcd(A5, A4, A3, A2, A1, A0, LCD_COLS, LCD_ROWS);
 MaxMatrix screen(DATA_PIN,CS_PIN,CLK_PIN, MATRIX_QTY);  //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
@@ -106,6 +109,7 @@ uint8_t intensity = DEFAULT_LED_INTENSITY;
 uint8_t lcdIntensity = GET_LCD_INTENSITY(DEFAULT_LED_INTENSITY);
 
 void setup() {
+  Serial1.begin(230400);
   Serial.begin(115200);
 
   // Inicializacion de botones
@@ -138,6 +142,7 @@ void setup() {
 }
 
 void loop() {  
+  Serial1.println("ASD");
   if(snake.isAlive()){
     char stringBuffer[20] = {0};
     sprintf(stringBuffer, "%ld", snake.getAliveTime());
@@ -379,20 +384,57 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
     const uint8_t* activeButtons = inputHandler->readInputs();
     uint8_t activeButtonsCount = inputHandler->getActivePinsCount();
     if (activeButtonsCount > 0) {
-      switch(activeButtons[0]) {
-        case LEFT_BUTTON_PIN:
-          lcd->upButtonPressed();
-          Serial.println("Button left");
-          break;
-        case RIGHT_BUTTON_PIN:
-          lcd->downButtonPressed();
-          Serial.println("Button right");
-          break;
-        case SELECT_BUTTON_PIN:
-          lcd->selectButtonPressed();
-          Serial.println("Button select");
-          break;
+      if (lastButtonRead != activeButtons[0]) {
+        lastButtonRead = activeButtons[0];
+
+        switch(activeButtons[0]) {
+          case LEFT_BUTTON_PIN:
+            lcd->upButtonPressed();
+            Serial.println("Button left");
+            break;
+          case RIGHT_BUTTON_PIN:
+            lcd->downButtonPressed();
+            Serial.println("Button right");
+            break;
+          case SELECT_BUTTON_PIN:
+            uint8_t item = lcd->selectButtonPressed() + 1;
+            switch(item){
+              case 1: // Play
+                snake->revive(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
+                screen->clear();
+                printWholeBody(snake->getBody(), snake->getCurrentLength(), snake->getHead(), screen, *intensity);
+                *lastUpdatedMillis = *lastMovedMillis = millis();
+                *input = INIT_DIR;
+              break;
+              case 2: // Show Highscores
+                lcd->clear();
+                printHighscores(*highscore, lcd);
+                delay(2000);
+                lcd->clear();
+              break;
+              case 3: // Reset Highscores
+                highscore->resetScores();
+                break;
+              case 4: // Set intensity
+                // *intensity = Serial.read() - '0';
+                // screen->setIntensity(*intensity);
+                // *lcdIntensity = GET_LCD_INTENSITY(*intensity);
+                // lcd->setBrightness(*lcdIntensity);
+                break;
+              case 5: // Dificulty
+                // *waitDecreaseRatioFactor = *waitTimeFactor = 1;
+                // int dificulty = Serial.read() - '0' - 1;
+                // for(int i=0; i<dificulty; i++){
+                //   *waitDecreaseRatioFactor = (*waitTimeFactor -= DIFICULTY_INTERVAL);
+                // }
+              break;
+            }
+            Serial.println("Button select");
+            break;
+        }
       }
+    } else {
+      lastButtonRead = NO_BUTTON;
     }
   }
 }
