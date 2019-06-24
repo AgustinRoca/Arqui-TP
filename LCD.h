@@ -46,8 +46,6 @@
         bool finishedCurrentLine;
         bool finished;
         bool started;
-        bool shouldClear;
-        uint8_t currentClearedCol;
 
       public:
         LCDLine(uint8_t maxCols);
@@ -56,7 +54,7 @@
         bool isContinuous();
         bool hasFinished();
         bool hasStarted();
-
+        
         bool shouldPrint(uint32_t delay);
         uint8_t getColToPrint();
 

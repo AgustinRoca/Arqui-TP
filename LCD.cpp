@@ -18,7 +18,9 @@
 
 // ------ LCD TEXT ------
 LCD::LCDText::LCDText(const char* text, uint8_t startingCol, bool continuous, uint8_t index) {
-  this->text = text;
+  char * copy = (char*)malloc(strlen(text));
+  strcpy(copy, text);
+  this->text = copy;
   this->beingPrinted = false;
   this->continuous = continuous;
 
@@ -91,10 +93,6 @@ bool LCD::LCDLine::shouldPrint(uint32_t delay) {
   if (lcdText == NULL)
     return false;
 
-  if (shouldClear) {
-    return true;
-  }
-
   if (millis() - lastPrinted > delay) {
     return !finished || (lcdText->isContinuous() && lcdText->getLength() > maxCols - lcdText->getStartingCol());
   } 
@@ -120,15 +118,6 @@ const char* LCD::LCDLine::getCurrent() {
 
   lastPrinted = millis();
   
-  if (shouldClear) {
-    currentClearedCol++;
-    // if (currentClearedCol >= MIN(lcdText->getLength(), maxCols))
-    if (currentClearedCol >= maxCols)
-      shouldClear = false;
-
-    return BLANK_S;
-  }
-  
   const char* ret = current;
   if (started && hasFinishedCurrentLine()) {
     current++;
@@ -142,9 +131,6 @@ const char* LCD::LCDLine::getCurrent() {
 }
 
 uint8_t LCD::LCDLine::getColToPrint() {
-  if (shouldClear)
-    return currentClearedCol;
-
   uint8_t col;
   uint16_t alreadyPrinted = current - lcdText->getText();
   if (alreadyPrinted < maxCols) {
@@ -189,8 +175,6 @@ void LCD::LCDLine::setLCDText(LCDText* lcdText) {
 void LCD::LCDLine::clear() {
   if (this->lcdText != NULL) {
     this->lcdText->setBeingPrinted(false);
-    currentClearedCol = 0;
-    shouldClear = true;
   }
 }
 
@@ -280,6 +264,8 @@ void LCD::setPreviousPage() {
       lines[i++]->clear();
     }
   }
+
+  lcd->clear();
 }
 
 void LCD::setFollowingPage() {
@@ -296,6 +282,8 @@ void LCD::setFollowingPage() {
       lines[i++]->clear();
     }
   }
+
+  lcd->clear();
 }
 
 
@@ -356,7 +344,6 @@ void LCD::clear() {
     lines[i]->clear();
     lines[i]->setLCDText(NULL);
   }
-
   for (uint16_t i = 0; i < lcdTextsCount; i++) {
     free(lcdTexts[i]);
   }
@@ -413,11 +400,12 @@ void LCD::setShowCursor(bool showCursor) {
     if (!showCursor) {
       highlightedLine = 0;
       if (isShowingCursor) {
-        lcd->noBlink();
+        lcd->noCursor();
       }
     }
   }
 }
+
 
 void LCD::upButtonPressed() {
   if (lcdTextsCount == 0)
@@ -426,8 +414,10 @@ void LCD::upButtonPressed() {
   if (highlightedLine == 0 && currentPage > 0) {
     setPreviousPage();
     highlightedLine = rows - 1;
+    lcd->setCursor(0, highlightedLine);
   } else if (highlightedLine > 0) {
     highlightedLine--;
+    lcd->setCursor(0, highlightedLine);
   }
 }
 
@@ -438,8 +428,10 @@ void LCD::downButtonPressed() {
   if (highlightedLine == rows - 1 && ceil(((float)lcdTextsCount) / rows) > currentPage) {
     setFollowingPage();
     highlightedLine = 0;
+    lcd->setCursor(0, highlightedLine);
   } else if (highlightedLine < rows - 1 && highlightedLine + 1 < lcdTextsCount - (currentPage * rows)) {
     highlightedLine++;
+    lcd->setCursor(0, highlightedLine);
   }
 }
 
@@ -468,15 +460,16 @@ void LCD::refresh() {
       while (start++ < cols && (c = *current++) != '\0') {
         lcd->print(c);
       }
+      if (lcdLine->shouldPrint(lcdLine->hasFinishedCurrentLine() ? timeout : 0)) 
+        lcd->setCursor(0, highlightedLine);
     }
-
-    if (showCursor && cursorRow != highlightedLine) {
-      lcd->setCursor(0, highlightedLine);
-      cursorRow = highlightedLine;
-      if (!isShowingCursor) {
-        isShowingCursor = true;
-        lcd->blink();
-      }
+  }
+  if (showCursor && (cursorRow != highlightedLine)) {
+    lcd->setCursor(0, highlightedLine);
+    cursorRow = highlightedLine;
+    if (!isShowingCursor) {
+      isShowingCursor = true;
+      lcd->cursor();
     }
   }
 }
@@ -484,5 +477,6 @@ void LCD::refresh() {
 void LCD::begin() {
   lcd->begin(cols, rows);
   lcd->clear();
-  lcd->cursor();
+  lcd->blink();
+  lcd->noCursor();
 }

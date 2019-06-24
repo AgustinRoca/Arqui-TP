@@ -3,7 +3,7 @@
 #include "HighscoreHandler.h"
 #include "Direction.h"
 #include "Position.h"
-#include "Snake.h"
+#include "Snake.h"javascript:Announcement.searchAnnouncements('3')
 #include "InputHandler.h"
 #include "LCD.h"
 
@@ -18,7 +18,7 @@
 
 #define LCD_COLS 20
 #define LCD_ROWS 4
-#define DEFAULT_CONTRAST 155
+#define DEFAULT_CONTRAST 150
 
 /* Constantes que definen la intensidad de un LED para que se considere prendido o apagado */
 #define DEFAULT_LED_INTENSITY 8 //intensidad de led cuando se prende
@@ -33,7 +33,8 @@
 #define WAIT_DECREASE_RATIO 0.5 // Cambio de velocidad de la vibora (newWait = INIT_WAIT * WAIT_DECREASE_RATIO)
 #define SPEED_INCREASE_TIME 15000 // Tiempo en ms entre aumento de velocidades y aumento del tamanio de la vibora
 #define INIT_DIR RIGHT
-#define DIFICULTY_INTERVAL 0.3
+#define DIFFICULTY_INTERVAL 0.3
+#define DIFFICULTY_LEVELS 3
 
 /* Constantes utilizadas para el almacenamiento de maximas puntuaciones*/
 #define INITIAL_EEPROM_ADDRESS 0 // Posicion de la EEPROM desde la que se van a guardar los highscores
@@ -42,8 +43,8 @@
 
 /* Constantes relacionadas a los pins usados para conectar las componentes a la placa*/
 #define LEFT_BUTTON_PIN 9 // Pin en la que se conecta la flechita izquierda
-#define RIGHT_BUTTON_PIN 6 // Pin en la que se conecta la flechita derecha
-#define SELECT_BUTTON_PIN 4
+#define RIGHT_BUTTON_PIN 4 // Pin en la que se conecta la flechita derecha
+#define SELECT_BUTTON_PIN 7
 #define DATA_PIN 2 // Pin que se conecta al DIN de la matriz
 #define CLK_PIN 3 // Pin que se conecta al CLK de la matriz
 #define CS_PIN 8 // Pin que se conecta al CS de la matriz
@@ -102,14 +103,13 @@ double waitDecreaseRatioFactor = 1;
 int16_t lastButtonRead = NO_BUTTON;
 
 LCD lcd(A5, A4, A3, A2, A1, A0, LCD_COLS, LCD_ROWS);
-MaxMatrix screen(DATA_PIN,CS_PIN,CLK_PIN, MATRIX_QTY);  //0,0 = Arriba izquierda; 0,1 = Arriba derecha; 1,0 = Abajo izquierda; 1,1 = Arriba derecha
-
+MaxMatrix screen(DATA_PIN,CS_PIN,CLK_PIN, MATRIX_QTY);
 uint8_t contrast = DEFAULT_CONTRAST;
 uint8_t intensity = DEFAULT_LED_INTENSITY;
 uint8_t lcdIntensity = GET_LCD_INTENSITY(DEFAULT_LED_INTENSITY);
 
 void setup() {
-  Serial1.begin(230400);
+  //Serial1.begin(230400);
   Serial.begin(115200);
 
   // Inicializacion de botones
@@ -142,13 +142,8 @@ void setup() {
 }
 
 void loop() {  
-  Serial1.println("ASD");
+  //Serial1.println("ASD");
   if(snake.isAlive()){
-    char stringBuffer[20] = {0};
-    sprintf(stringBuffer, "%ld", snake.getAliveTime());
-    lcd.clear();
-    lcd.addText(stringBuffer, 0);
-    
     if(millis() - lastUpdatedMillis > SPEED_INCREASE_TIME * waitTimeFactor){ // Si tengo que aumentar la velocidad y agrandar la snake
       snake.setCurrentSpeed(snake.getCurrentSpeed() * WAIT_DECREASE_RATIO * waitDecreaseRatioFactor);
       enlarge = true;
@@ -160,6 +155,10 @@ void loop() {
     input = translateInput(input, &lcd, &highscore, inputHandler, screen, &intensity);
     
     if(millis() - lastMovedMillis > snake.getCurrentSpeed()){ //Si es tiempo de moverse
+      char stringBuffer[20] = {0};
+      sprintf(stringBuffer, "%ld", snake.getAliveTime());
+      lcd.clear();
+      lcd.addText(stringBuffer, 0);
       Position oldTail = snake.getBody()[(MAX_LENGTH + snake.getHead() - (snake.getCurrentLength() - 1) ) % MAX_LENGTH]; // Guardo la cola de la vibora para apagar despues (La guardo por si estamos en el caso limite en que el head pise a la cola en el array de body)
       snake.moveSnake(input, enlarge);
       enlarge = false; // Si lo agrandaba, ya no lo tengo que agrandar
@@ -172,6 +171,7 @@ void loop() {
         snake.freeSnake(); // Libera solo el body, no es un destructor
         highscore.registerScore(snake.getAliveTime()); // Si fue un highscore, lo guarda
         delay(1000); // Para que se vea la pantalla de GAME OVER
+        screen.clear();
         printMenu(&highscore, &intensity, &lcd);
       }
       
@@ -179,7 +179,7 @@ void loop() {
     }
   }
   else{
-    readMenuInput(&snake, &inputHandler, &lcd, &highscore, &screen, &intensity, &lastUpdatedMillis, &lastMovedMillis, &input, &waitTimeFactor, &waitDecreaseRatioFactor, &lcdIntensity);
+    readMenuInput(&snake, &inputHandler, &lcd, &highscore, &screen, &intensity, &lastUpdatedMillis, &lastMovedMillis, &input, &waitTimeFactor, &waitDecreaseRatioFactor, &lcdIntensity, &lastButtonRead);
   }
   
   lcd.refresh();
@@ -248,17 +248,16 @@ void printHighscores(HighscoreHandler highscore, LCD * lcd) {
   Serial.println("--------------------------------------------");
 
   // lcd->setCursor(0,0);
-  // lcd->print("Puntajes Maximos:");
+  lcd->addText("Puntajes Maximos:",0);
   if (highscore.getScoresAmmount() > 0) {
     for(int i=0; i<highscore.getScoresAmmount(); i++){
-      // lcd->setCursor(0,i+1);
-      // lcd->print(i+1);
-      // lcd->print(". ");
-      // lcd->print((long)highscore.getScores()[i]);
+      char * buff = (char *)malloc(LCD_COLS * sizeof(buff));
+      sprintf(buff, "%d. %ld", i+1, (long)highscore.getScores()[i]);
+      lcd->addText(buff, 0);
+      free(buff);
     }
   } else {
-    // lcd->setCursor(0,1);
-    // lcd->addText("No hay puntajes registrados");
+    lcd->addText("No hay puntajes registrados",0);
   }
   
 }
@@ -327,7 +326,7 @@ void printMenu(HighscoreHandler * highscore, uint8_t * intensity, LCD * lcd){
   Serial.println("2. Show Highscores");
   Serial.println("3. Reset Highscores");
   Serial.println("4x. Set Intensity in x (x = (1..8))"); //Ejemplo: 41 = set Intensity in 1
-  Serial.println("5x. Dificulty in x ( x = 1, 2 or 3)"); //Ejemplo: 53 = set Dificulty in 3
+  Serial.println("5x. Difficulty in x ( x = 1, 2 or 3)"); //Ejemplo: 53 = set Difficulty in 3
   Serial.println("--------------------------------------------");
 
   lcd->clear();
@@ -335,14 +334,14 @@ void printMenu(HighscoreHandler * highscore, uint8_t * intensity, LCD * lcd){
   lcd->addText("2. Show Highscores", 0);
   lcd->addText("3. Reset Highscores", 0);
   lcd->addText("4. Intensity", 0);
-  lcd->addText("5. Dificulty", 0);
+  lcd->addText("5. Difficulty", 0);
   lcd->setShowCursor(true);
 }
 
 
 /* SE CAMBIA CUANDO HAYA BOTONES */
 /* Lee la opcion del menu que se selecciono, y se ejecuta, si se le manda solo 4 o solo 5 se rompe (igual esto cambia cuando haya botones) */
-void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, HighscoreHandler * highscore,  MaxMatrix * screen,uint8_t * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor, uint8_t * lcdIntensity){
+void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, HighscoreHandler * highscore,  MaxMatrix * screen,uint8_t * intensity, uint64_t * lastUpdatedMillis, uint64_t * lastMovedMillis, Direction * input, double * waitTimeFactor, double * waitDecreaseRatioFactor, uint8_t * lcdIntensity, int16_t * lastButtonRead){
   if(Serial.available()){
     char c = Serial.read(); //Deberiamos agregar un while(Serial.available()) para que lea todo el buffer por si se insertaron mas de una letra? Nos quedamos con la primera o la ultima?
     switch(toupper(c)){
@@ -352,6 +351,7 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
         printWholeBody(snake->getBody(), snake->getCurrentLength(), snake->getHead(), screen, *intensity);
         *lastUpdatedMillis = *lastMovedMillis = millis();
         *input = INIT_DIR;
+        lcd->clear();
       break;
       case '2': // Show Highscores
         lcd->clear();
@@ -361,80 +361,312 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
       break;
       case '3': // Reset Highscores
         highscore->resetScores();
-        break;
+      break;
       case '4': // Set intensity
         *intensity = Serial.read() - '0';
         screen->setIntensity(*intensity);
         *lcdIntensity = GET_LCD_INTENSITY(*intensity);
         lcd->setBrightness(*lcdIntensity);
-        break;
-      case '5': // Dificulty
+      break;
+      case '5': // Difficulty
+      {
         *waitDecreaseRatioFactor = *waitTimeFactor = 1;
-        int dificulty = Serial.read() - '0' - 1;
-        for(int i=0; i<dificulty; i++){
-          *waitDecreaseRatioFactor = (*waitTimeFactor -= DIFICULTY_INTERVAL);
+        int difficulty = Serial.read() - '0' - 1;
+        for(int i=0; i<difficulty; i++){
+          *waitDecreaseRatioFactor = (*waitTimeFactor -= DIFFICULTY_INTERVAL);
+        }
+      }
+      break;
+      case 'A':
+        lcd->upButtonPressed();
+      break;
+      case 'D':
+        lcd->downButtonPressed();
+      break;
+      case 'W':
+        {
+          const uint8_t* activeButtons = inputHandler->readInputs();
+          uint8_t activeButtonsCount = inputHandler->getActivePinsCount();
+          uint8_t item = lcd->selectButtonPressed() + 1;
+          switch(item){
+            case 1: // Play
+              snake->revive(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
+              screen->clear();
+              printWholeBody(snake->getBody(), snake->getCurrentLength(), snake->getHead(), screen, *intensity);
+              *lastUpdatedMillis = *lastMovedMillis = millis();
+              *input = INIT_DIR;
+            break;
+            case 2: // Show Highscores
+              c = 0;
+              lcd->clear();
+              printHighscores(*highscore, lcd);
+              lcd->setShowCursor(false);
+              do{
+                lcd->refresh();
+                if(Serial.available()){
+                  c = Serial.read();
+                  cleanSerial();
+                }
+              }while(toupper(c) != 'W');
+              lcd->clear();
+              printMenu(highscore, intensity,lcd);
+              lcd->setShowCursor(true);
+            break;
+            case 3: // Reset Highscores
+              highscore->resetScores();
+              break;
+            case 4: // Set intensity
+            {
+              lcd->clear();
+              bool done = false;
+              char * buff = (char*)malloc(1 * sizeof(*buff));
+              buff[0] = *intensity + '0';
+              lcd->addText("Intensity:",0);
+              lcd->addText(buff,0);
+              do{
+                buff[0] = *intensity + '0';
+                lcd->refresh();
+                if(Serial.available()){
+                  char but = Serial.read();
+                  switch(toupper(but)){
+                    case 'A':
+                      lcd->clear();
+                      *intensity = ((DEFAULT_LED_INTENSITY+1)+*intensity - 1)%(DEFAULT_LED_INTENSITY+1);
+                      buff[0] = *intensity + '0';
+                      lcd->addText("Intensity:",0);
+                      lcd->addText(buff,0);
+                      screen->setIntensity(*intensity);
+                      *lcdIntensity = GET_LCD_INTENSITY(*intensity);
+                      lcd->setBrightness(*lcdIntensity);
+                    break;
+                    case 'D':
+                      lcd->clear();
+                      *intensity = ((DEFAULT_LED_INTENSITY+1)+*intensity + 1)%(DEFAULT_LED_INTENSITY+1);
+                      buff[0] = *intensity + '0';
+                      lcd->addText("Intensity:",0);
+                      lcd->addText(buff,0);
+                      screen->setIntensity(*intensity);
+                      *lcdIntensity = GET_LCD_INTENSITY(*intensity);
+                      lcd->setBrightness(*lcdIntensity);
+                    break;
+                    case 'W':
+                      done = true;
+                    break;
+                  }
+                }
+              }while(!done);
+              free(buff);
+              printMenu(highscore, intensity, lcd);
+            }
+              break;
+            case 5: // Difficulty
+            {
+              *waitDecreaseRatioFactor = *waitTimeFactor = 1;
+              int difficulty = 0;
+              lcd->clear();
+              bool done = false;
+              char * buff = (char*)malloc(1 * sizeof(*buff));
+              buff[0] = difficulty + '0';
+              lcd->addText("Difficulty:",0);
+              lcd->addText(buff,0);
+              do{
+                buff[0] = difficulty + '0';
+                lcd->refresh();
+                if(Serial.available()){
+                  char but = Serial.read();
+                  switch(toupper(but)){
+                    case 'A':
+                      lcd->clear();
+                      difficulty = ((DIFFICULTY_LEVELS+1)+difficulty - 1)%(DIFFICULTY_LEVELS+1);
+                      buff[0] = difficulty + '0';
+                      lcd->addText("Difficulty:",0);
+                      lcd->addText(buff,0);
+                    break;
+                    case 'D':
+                      lcd->clear();
+                      difficulty = ((DIFFICULTY_LEVELS+1)+difficulty + 1)%(DIFFICULTY_LEVELS+1);
+                      buff[0] = difficulty + '0';
+                      lcd->addText("Difficulty:",0);
+                      lcd->addText(buff,0);
+                    break;
+                    case 'W':
+                      done = true;
+                      for(int i=0; i<difficulty; i++){
+                        *waitDecreaseRatioFactor = (*waitTimeFactor -= DIFFICULTY_INTERVAL);
+                      }
+                    break;
+                  }
+                }
+              }while(!done);
+              free(buff);
+              printMenu(highscore, intensity, lcd);
+            }
+            break;
+          }
         }
       break;
     }
     cleanSerial();
-    if(toupper(c) != '1' && c!='\r'){
+    if((c > '1') && (c <= '5') && (c!='\r')){
       printMenu(highscore, intensity, lcd);
     }
   } else {
     const uint8_t* activeButtons = inputHandler->readInputs();
     uint8_t activeButtonsCount = inputHandler->getActivePinsCount();
     if (activeButtonsCount > 0) {
-      if (lastButtonRead != activeButtons[0]) {
-        lastButtonRead = activeButtons[0];
+      if (*lastButtonRead != activeButtons[0]) {
+        *lastButtonRead = activeButtons[0];
 
         switch(activeButtons[0]) {
           case LEFT_BUTTON_PIN:
             lcd->upButtonPressed();
-            Serial.println("Button left");
+            //Serial.println("Button left");
             break;
           case RIGHT_BUTTON_PIN:
             lcd->downButtonPressed();
-            Serial.println("Button right");
+            //Serial.println("Button right");
             break;
           case SELECT_BUTTON_PIN:
-            uint8_t item = lcd->selectButtonPressed() + 1;
-            switch(item){
-              case 1: // Play
-                snake->revive(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
-                screen->clear();
-                printWholeBody(snake->getBody(), snake->getCurrentLength(), snake->getHead(), screen, *intensity);
-                *lastUpdatedMillis = *lastMovedMillis = millis();
-                *input = INIT_DIR;
-              break;
-              case 2: // Show Highscores
-                lcd->clear();
-                printHighscores(*highscore, lcd);
-                delay(2000);
-                lcd->clear();
-              break;
-              case 3: // Reset Highscores
-                highscore->resetScores();
-                break;
-              case 4: // Set intensity
-                // *intensity = Serial.read() - '0';
-                // screen->setIntensity(*intensity);
-                // *lcdIntensity = GET_LCD_INTENSITY(*intensity);
-                // lcd->setBrightness(*lcdIntensity);
-                break;
-              case 5: // Dificulty
-                // *waitDecreaseRatioFactor = *waitTimeFactor = 1;
-                // int dificulty = Serial.read() - '0' - 1;
-                // for(int i=0; i<dificulty; i++){
-                //   *waitDecreaseRatioFactor = (*waitTimeFactor -= DIFICULTY_INTERVAL);
-                // }
+             {
+                  const uint8_t* activeButtons = inputHandler->readInputs();
+                  uint8_t activeButtonsCount = inputHandler->getActivePinsCount();
+                  uint8_t item = lcd->selectButtonPressed() + 1;
+                  switch(item){
+                    case 1: // Play
+                      snake->revive(INIT_LENGTH, INIT_DIR, INIT_WAIT, INIT_ROW_POS, INIT_COL_POS);
+                      screen->clear();
+                      printWholeBody(snake->getBody(), snake->getCurrentLength(), snake->getHead(), screen, *intensity);
+                      *lastUpdatedMillis = *lastMovedMillis = millis();
+                      *input = INIT_DIR;
+                    break;
+                    case 2: // Show Highscores
+                    {
+                      char c = 0;
+                      lcd->clear();
+                      printHighscores(*highscore, lcd);
+                      lcd->setShowCursor(false);
+                      do{
+                        lcd->refresh();
+                        activeButtons = inputHandler->readInputs();
+                        activeButtonsCount = inputHandler->getActivePinsCount();
+                        if (activeButtonsCount > 0) {
+                          if (*lastButtonRead != activeButtons[0]) {
+                            *lastButtonRead = activeButtons[0];
+                          }
+                        }
+                      }while(activeButtons[0] != SELECT_BUTTON_PIN);
+                      lcd->clear();
+                      printMenu(highscore, intensity,lcd);
+                      lcd->setShowCursor(true);
+                    }
+                    break;
+                    case 3: // Reset Highscores
+                      highscore->resetScores();
+                      break;
+                    case 4: // Set intensity
+                    {
+                      lcd->clear();
+                      bool done = false;
+                      char * buff = (char*)malloc(1 * sizeof(*buff));
+                      buff[0] = *intensity + '0';
+                      lcd->addText("Intensity:",0);
+                      lcd->addText(buff,0);
+                      do{
+                        buff[0] = *intensity + '0';
+                        lcd->refresh();
+                        activeButtons = inputHandler->readInputs();
+                        activeButtonsCount = inputHandler->getActivePinsCount();
+                        if (activeButtonsCount > 0) {
+                          if (*lastButtonRead != activeButtons[0]) {
+                            *lastButtonRead = activeButtons[0];
+                          switch(activeButtons[0]){
+                            case LEFT_BUTTON_PIN:
+                              lcd->clear();
+                              *intensity = ((DEFAULT_LED_INTENSITY+1)+*intensity - 1)%(DEFAULT_LED_INTENSITY+1);
+                              buff[0] = *intensity + '0';
+                              lcd->addText("Intensity:",0);
+                              lcd->addText(buff,0);
+                              screen->setIntensity(*intensity);
+                              *lcdIntensity = GET_LCD_INTENSITY(*intensity);
+                              lcd->setBrightness(*lcdIntensity);
+                            break;
+                            case RIGHT_BUTTON_PIN:
+                              lcd->clear();
+                              *intensity = ((DEFAULT_LED_INTENSITY+1)+*intensity + 1)%(DEFAULT_LED_INTENSITY+1);
+                              buff[0] = *intensity + '0';
+                              lcd->addText("Intensity:",0);
+                              lcd->addText(buff,0);
+                              screen->setIntensity(*intensity);
+                              *lcdIntensity = GET_LCD_INTENSITY(*intensity);
+                              lcd->setBrightness(*lcdIntensity);
+                            break;
+                            case SELECT_BUTTON_PIN:
+                              done = true;
+                            break;
+                          }
+                        }
+                       }
+                      }while(!done);
+                      free(buff);
+                      printMenu(highscore, intensity, lcd);
+                    }
+                      break;
+                    case 5: // Difficulty
+                    {
+                      *waitDecreaseRatioFactor = *waitTimeFactor = 1;
+                      int difficulty = 0;
+                      lcd->clear();
+                      bool done = false;
+                      char * buff = (char*)malloc(1 * sizeof(*buff));
+                      buff[0] = difficulty + '0';
+                      lcd->addText("Difficulty:",0);
+                      lcd->addText(buff,0);
+                      do{
+                        buff[0] = difficulty + '0';
+                        lcd->refresh();
+                        activeButtons = inputHandler->readInputs();
+                        activeButtonsCount = inputHandler->getActivePinsCount();
+                        if (activeButtonsCount > 0) {
+                          if (*lastButtonRead != activeButtons[0]) {
+                            *lastButtonRead = activeButtons[0];
+                          switch(activeButtons[0]){
+                            case LEFT_BUTTON_PIN:
+                              lcd->clear();
+                              difficulty = ((DIFFICULTY_LEVELS+1)+difficulty - 1)%(DIFFICULTY_LEVELS+1);
+                              buff[0] = difficulty + '0';
+                              lcd->addText("Difficulty:",0);
+                              lcd->addText(buff,0);
+                            break;
+                            case RIGHT_BUTTON_PIN:
+                              lcd->clear();
+                              difficulty = ((DIFFICULTY_LEVELS+1)+difficulty + 1)%(DIFFICULTY_LEVELS+1);
+                              buff[0] = difficulty + '0';
+                              lcd->addText("Difficulty:",0);
+                              lcd->addText(buff,0);
+                            break;
+                            case SELECT_BUTTON_PIN:
+                              done = true;
+                              for(int i=0; i<difficulty; i++){
+                                *waitDecreaseRatioFactor = (*waitTimeFactor -= DIFFICULTY_INTERVAL);
+                              }
+                            break;
+                          }
+                        }
+                       }
+                      }while(!done);
+                      free(buff);
+                      printMenu(highscore, intensity, lcd);
+                    }
+                    break;
+                  }
               break;
             }
-            Serial.println("Button select");
+            //Serial.println("Button select");
             break;
         }
       }
     } else {
-      lastButtonRead = NO_BUTTON;
+      *lastButtonRead = NO_BUTTON;
     }
   }
 }
