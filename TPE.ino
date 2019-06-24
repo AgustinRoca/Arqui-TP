@@ -419,7 +419,8 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
             {
               lcd->clear();
               bool done = false;
-              char * buff = (char*)malloc(1 * sizeof(*buff));
+              char * buff = (char*)malloc(2 * sizeof(*buff));
+              buff[1]=0;
               buff[0] = *intensity + '0';
               lcd->addText("Intensity:",0);
               lcd->addText(buff,0);
@@ -467,6 +468,7 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
               bool done = false;
               char * buff = (char*)malloc(1 * sizeof(*buff));
               buff[0] = difficulty + '0';
+              buff[1]=0;
               lcd->addText("Difficulty:",0);
               lcd->addText(buff,0);
               do{
@@ -617,7 +619,8 @@ void readMenuInput(Snake * snake, InputHandler * inputHandler, LCD * lcd, Highsc
                       int difficulty = 0;
                       lcd->clear();
                       bool done = false;
-                      char * buff = (char*)malloc(1 * sizeof(*buff));
+                      char * buff = (char*)malloc(2 * sizeof(*buff));
+                      buff[1] = 0;
                       buff[0] = difficulty + '0';
                       lcd->addText("Difficulty:",0);
                       lcd->addText(buff,0);
